@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-  2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -36,7 +35,7 @@ struct system_ifconfig
 
 /* Output format support.  */
 
-/* Set this to a comma seperated, comma terminated list of struct
+/* Set this to a comma separated, comma terminated list of struct
    format_handler entries.  They are inserted at the beginning of the
    default list, so they override generic implementations if they have
    the same name.  For example:

@@ -1,7 +1,5 @@
 /* syslogd - log system messages
-  Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-  2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free Software
-  Foundation, Inc.
+  Copyright (C) 1997-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -116,6 +114,19 @@
 # include "logprio.h"
 #endif
 
+/* Glibc prior to 2.17 included a definition of LOG_MAKEPRI
+ * that evaluated LOG_MAKEPRI(LOG_USER, 0) to (1 << 9).
+ * The first argument was shifted three bits, ignoring
+ * the definition LOG_USER = (1 << 3).  Avoid this
+ * harmful mistake.
+ */
+#ifdef LOG_MAKEPRI
+# if LOG_MAKEPRI (1, 0) > LOG_PRIMASK
+#  warning Discarding faulty LOG_MAKEPRI defined in system header file.
+#  undef LOG_MAKEPRI
+# endif
+#endif /* LOG_MAKEPRI */
+
 #ifndef LOG_MAKEPRI
 #  define LOG_MAKEPRI(fac, p)	((fac) | (p))
 #endif
@@ -124,7 +135,7 @@
 #include <progname.h>
 #include <libinetutils.h>
 #include <readutmp.h>		/* May define UTMP_NAME_FUNCTION.  */
-#include "unused-parameter.h"
+#include "attribute.h"
 #include "xalloc.h"
 
 /* A mask of all facilities mentioned explicitly in the configuration file
@@ -1144,9 +1155,9 @@ textpri (int pri)
   static char res[20];
   CODE *c_pri, *c_fac;
 
-  for (c_fac = facilitynames; c_fac->c_name
+  for (c_fac = (CODE *) facilitynames; c_fac->c_name
        && !(c_fac->c_val == LOG_FAC (pri) << 3); c_fac++);
-  for (c_pri = prioritynames; c_pri->c_name
+  for (c_pri = (CODE *) prioritynames; c_pri->c_name
        && !(c_pri->c_val == LOG_PRI (pri)); c_pri++);
 
   snprintf (res, sizeof (res), "%s.%s", c_fac->c_name, c_pri->c_name);
@@ -1731,7 +1742,7 @@ cvthname (struct sockaddr *f, socklen_t len)
 }
 
 void
-domark (int signo _GL_UNUSED_PARAMETER)
+domark (int signo MAYBE_UNUSED)
 {
   struct filed *f;
 
@@ -1780,7 +1791,7 @@ logerror (const char *type)
 }
 
 void
-doexit (int signo _GL_UNUSED_PARAMETER)
+doexit (int signo MAYBE_UNUSED)
 {
   _exit (EXIT_SUCCESS);
 }
@@ -2077,7 +2088,7 @@ load_confdir (const char *dirname, struct filed **nextp)
 
 /* INIT -- Initialize syslogd from configuration table.  */
 void
-init (int signo _GL_UNUSED_PARAMETER)
+init (int signo MAYBE_UNUSED)
 {
   int rc, ret;
   struct filed *f, *next, **nextp;
@@ -2247,7 +2258,7 @@ cfline (const char *line, struct filed *f)
 	}
       else
 	{
-	  pri = decode (bp, prioritynames);
+	  pri = decode (bp, (CODE *) prioritynames);
 	  if (pri < 0 || (pri > LOG_PRIMASK && pri != INTERNAL_NOPRI))
 	    {
 	      snprintf (ebuf, sizeof (ebuf),
@@ -2293,7 +2304,7 @@ cfline (const char *line, struct filed *f)
 	      }
 	  else
 	    {
-	      i = decode (buf, facilitynames);
+	      i = decode (buf, (CODE *) facilitynames);
 
 	      if (i < 0 || i > (LOG_NFACILITIES << 3))
 		{
@@ -2474,7 +2485,7 @@ decode (const char *name, CODE * codetab)
 }
 
 void
-dbg_toggle (int signo _GL_UNUSED_PARAMETER)
+dbg_toggle (int signo MAYBE_UNUSED)
 {
   int dbg_save = dbg_output;
 
@@ -2510,7 +2521,7 @@ dbg_printf (const char *fmt, ...)
    set a flag variable which will tell the main loop to go through a
    restart.  */
 void
-trigger_restart (int signo _GL_UNUSED_PARAMETER)
+trigger_restart (int signo MAYBE_UNUSED)
 {
   restart = 1;
 #ifndef HAVE_SIGACTION

@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-  2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -40,7 +39,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 
 #include <ping.h>
 #include "ping_impl.h"
@@ -173,7 +172,7 @@ handler (int code, void *closure,
 
 int
 print_echo (int dupflag, struct ping_stat *ping_stat,
-	    struct sockaddr_in *dest _GL_UNUSED_PARAMETER,
+	    struct sockaddr_in *dest MAYBE_UNUSED,
 	    struct sockaddr_in *from,
 	    struct ip *ip, icmphdr_t * icmp, int datalen)
 {
@@ -338,7 +337,7 @@ print_ip_header (struct ip *ip)
 }
 
 void
-print_ip_data (icmphdr_t * icmp, void *data _GL_UNUSED_PARAMETER)
+print_ip_data (icmphdr_t * icmp, void *data MAYBE_UNUSED)
 {
   int hlen;
   unsigned char *cp;
@@ -391,7 +390,7 @@ struct icmp_diag icmp_diag[] = {
   {ICMP_SOURCE_QUENCH, "Source Quench", print_ip_data, NULL},
   {ICMP_REDIRECT, NULL, print_icmp, "Redirect"},
   {ICMP_ECHO, "Echo Request", NULL, NULL},
-  {ICMP_ROUTERADV, "Router Advertisment", NULL, NULL},
+  {ICMP_ROUTERADV, "Router Advertisement", NULL, NULL},
   {ICMP_ROUTERDISCOVERY, "Router Discovery", NULL, NULL},
   {ICMP_TIME_EXCEEDED, NULL, print_icmp, "Time exceeded"},
   {ICMP_PARAMETERPROB, NULL, print_parameterprob, NULL},

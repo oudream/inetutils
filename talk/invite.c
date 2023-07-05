@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -61,7 +59,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <setjmp.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include "talk_ctl.h"
 #include "talk.h"
 
@@ -116,7 +114,7 @@ announce_invite (void)
  * Routine called on interupt to re-invite the callee
  */
 void
-re_invite (int sig _GL_UNUSED_PARAMETER)
+re_invite (int sig MAYBE_UNUSED)
 {
 
   message ("Ringing your party again");

@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-  2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-  2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -59,9 +57,9 @@
  * the length of *s1 is returned.
  */
 int
-isprefix (register char *s1, register char *s2)
+isprefix (register const char *s1, register const char *s2)
 {
-  char *os1;
+  const char *os1;
   register char c1, c2;
 
   if (*s1 == '\0')
@@ -84,7 +82,7 @@ static char *ambiguous;		/* special return value for command routines */
 /* char	*name; name to match */
 /* char	**table; name entry in table */
 char **
-genget (char *name, char **table, int stlen)
+genget (const char *name, char **table, int stlen)
 {
   register char **c, **found;
   register int n;
@@ -110,7 +108,7 @@ genget (char *name, char **table, int stlen)
  * Function call version of Ambiguous()
  */
 int
-Ambiguous (char *s)
+Ambiguous (void *s)
 {
-  return ((char **) s == &ambiguous);
+  return (s == &ambiguous);
 }

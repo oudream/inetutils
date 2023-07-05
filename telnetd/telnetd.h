@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-  2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
-  Free Software Foundation, Inc.
+  Copyright (C) 1996-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -164,7 +162,7 @@ typedef struct
 /*
  * Tricky code here.  What we want to know is if the MY_STATE_WILL
  * and MY_WANT_STATE_WILL bits have the same value.  Since the two
- * bits are adjacent, a little arithmatic will show that by adding
+ * bits are adjacent, a little arithmetic will show that by adding
  * in the lower bit, the upper bit will be set if the two bits were
  * different, and clear if they were the same.
  */
@@ -271,7 +269,7 @@ void io_drain (void);
 
 int stilloob (int s);
 void ptyflush (void);
-char *nextitem (char *current);
+char *nextitem (char *current, const char *endp);
 void netclear (void);
 void netflush (void);
 

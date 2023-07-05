@@ -1,6 +1,5 @@
 /* flags.c -- network interface flag handling
-  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-  2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -217,6 +216,9 @@ struct if_flag
 #endif
 #ifdef IFF_SNAP			/* Ethernet driver outputs SNAP header.  */
     {"SNAP", IFF_SNAP, 0},
+#endif
+#ifdef IFF_CANTCONFIG
+    {"CANTCONFIG", IFF_CANTCONFIG, 0},
 #endif
 #ifdef IFF_MONITOR
     {"MONITOR", IFF_MONITOR, 0},

@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -90,7 +88,7 @@
 #endif
 
 #include "ftp_var.h"
-#include "unused-parameter.h"
+#include "attribute.h"
 #include "xalloc.h"
 #include "xgetcwd.h"
 
@@ -480,7 +478,7 @@ char *stype[] = {
  * Set binary transfer type.
  */
 void
-setbinary (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setbinary (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   stype[1] = "binary";
@@ -491,7 +489,7 @@ setbinary (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Set ascii transfer type.
  */
 void
-setascii (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setascii (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   stype[1] = "ascii";
@@ -502,7 +500,7 @@ setascii (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Set tenex transfer type.
  */
 void
-settenex (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+settenex (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   stype[1] = "tenex";
@@ -513,7 +511,7 @@ settenex (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Set file transfer mode.
  */
 void
-setftmode (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setftmode (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   printf ("We only support %s mode, sorry.\n", modename);
@@ -524,7 +522,7 @@ setftmode (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Set file transfer format.
  */
 void
-setform (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setform (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   printf ("We only support %s format, sorry.\n", formname);
@@ -535,7 +533,7 @@ setform (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Set file transfer structure.
  */
 void
-setstruct (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setstruct (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   printf ("We only support %s structure, sorry.\n", structname);
@@ -913,7 +911,7 @@ getit (int argc, char **argv, int restartit, char *mode)
 }
 
 void
-mabort (int signo _GL_UNUSED_PARAMETER)
+mabort (int signo MAYBE_UNUSED)
 {
   int ointer;
 
@@ -1037,7 +1035,7 @@ remglob (char **argv, int doswitch)
 	args = argv;
       if ((cp = *++args) == NULL)
 	args = NULL;
-      return cp ? 0 : strdup (cp);
+      return cp ? strdup (cp) : NULL;
     }
   if (ftemp == NULL)
     {
@@ -1117,16 +1115,16 @@ remglob (char **argv, int doswitch)
 }
 
 char *
-onoff (int bool)
+onoff (int val)
 {
-  return (bool ? "on" : "off");
+  return (val ? "on" : "off");
 }
 
 /*
  * Show status.
  */
 void
-status (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+status (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
   int i;
 
@@ -1191,7 +1189,7 @@ status (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Set beep on cmd completed mode.
  */
 void
-setbell (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setbell (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   bell = !bell;
@@ -1203,7 +1201,7 @@ setbell (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Turn on packet tracing.
  */
 void
-settrace (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+settrace (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   trace = !trace;
@@ -1222,7 +1220,7 @@ settrace (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Toggle state only in absence of an argument.
  */
 void
-sethash (int argc _GL_UNUSED_PARAMETER, char **argv)
+sethash (int argc MAYBE_UNUSED, char **argv)
 {
   char *p = argv[1];
 
@@ -1242,10 +1240,12 @@ sethash (int argc _GL_UNUSED_PARAMETER, char **argv)
 	{
 	case 'g':
 	case 'G':
-	  hashbytes *= 1024;	/* Cascaded multiplication!  */
+	  hashbytes *= 1024 * 1024 * 1024;
+	  break;
 	case 'm':
 	case 'M':
-	  hashbytes *= 1024;
+	  hashbytes *= 1024 * 1024;
+	  break;
 	case 'k':
 	case 'K':
 	  hashbytes *= 1024;
@@ -1270,7 +1270,7 @@ sethash (int argc _GL_UNUSED_PARAMETER, char **argv)
  * Turn on printing of server echo's.
  */
 void
-setverbose (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setverbose (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   verbose = !verbose;
@@ -1282,7 +1282,7 @@ setverbose (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Allow any address family.
  */
 void
-setipany (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setipany (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
   usefamily = AF_UNSPEC;
   printf ("Selecting addresses: %s.\n", "any");
@@ -1293,7 +1293,7 @@ setipany (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Restrict to IPv4 addresses.
  */
 void
-setipv4 (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setipv4 (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
   usefamily = AF_INET;
   printf ("Selecting addresses: %s.\n", "IPv4");
@@ -1304,7 +1304,7 @@ setipv4 (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Restrict to IPv6 addresses.
  */
 void
-setipv6 (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setipv6 (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
   usefamily = AF_INET6;
   printf ("Selecting addresses: %s.\n", "IPv6");
@@ -1315,7 +1315,7 @@ setipv6 (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Toggle use of EPRT/EPRT for IPv4.
  */
 void
-setepsv4 (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setepsv4 (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   doepsv4 = !doepsv4;
@@ -1327,7 +1327,7 @@ setepsv4 (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Toggle PORT cmd use before each data connection.
  */
 void
-setport (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setport (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   sendport = !sendport;
@@ -1340,7 +1340,7 @@ setport (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * during mget, mput, and mdelete.
  */
 void
-setprompt (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setprompt (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   interactive = !interactive;
@@ -1353,7 +1353,7 @@ setprompt (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * on local file names.
  */
 void
-setglob (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setglob (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   doglob = !doglob;
@@ -1656,7 +1656,7 @@ mls (int argc, char **argv)
  * Do a shell escape
  */
 void
-shell (int argc, char **argv _GL_UNUSED_PARAMETER)
+shell (int argc, char **argv MAYBE_UNUSED)
 {
   pid_t pid;
   sighandler_t old1, old2;
@@ -1721,6 +1721,9 @@ shell (int argc, char **argv _GL_UNUSED_PARAMETER)
 void
 user (int argc, char **argv)
 {
+#if !HAVE_DECL_GETPASS
+  extern char *getpass ();
+#endif
   char acct[80];
   int n, aflag = 0;
 
@@ -1784,7 +1787,7 @@ user (int argc, char **argv)
  * Print working directory.
  */
 void
-pwd (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+pwd (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
   int oldverbose = verbose;
 
@@ -1804,7 +1807,7 @@ pwd (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Print local working directory.
  */
 void
-lpwd (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+lpwd (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
   char *dir = xgetcwd ();
 
@@ -1976,7 +1979,7 @@ rmthelp (int argc, char **argv)
  * Terminate session and exit.
  */
 void
-quit (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+quit (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   if (connected)
@@ -1993,7 +1996,7 @@ quit (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
  * Terminate session, but don't exit.
  */
 void
-disconnect (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+disconnect (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   if (!connected)
@@ -2070,6 +2073,9 @@ globulize (char *cp)
 void
 account (int argc, char **argv)
 {
+#if !HAVE_DECL_GETPASS
+  extern char *getpass ();
+#endif
   char acct[50], *ap;
 
   if (argc > 1)
@@ -2098,7 +2104,7 @@ account (int argc, char **argv)
 jmp_buf abortprox;
 
 void
-proxabort (int sig _GL_UNUSED_PARAMETER)
+proxabort (int sig MAYBE_UNUSED)
 {
 
   if (!proxy)
@@ -2181,7 +2187,7 @@ doproxy (int argc, char **argv)
 }
 
 void
-setcase (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setcase (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   mcase = !mcase;
@@ -2190,7 +2196,7 @@ setcase (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
 }
 
 void
-setcr (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setcr (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   crflag = !crflag;
@@ -2258,7 +2264,7 @@ dotrans (char *name)
 }
 
 void
-setpassive (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setpassive (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   passivemode = !passivemode;
@@ -2286,21 +2292,25 @@ setnmap (int argc, char **argv)
     }
   mapflag = 1;
   code = 1;
-  cp = strchr (altarg, ' ');
+  cp = altarg;
+  while (*cp && !isblank (*cp))
+    cp++;
   if (proxy)
     {
-      while (*++cp == ' ')
-	continue;
+      while (*cp && isblank(*cp))
+	cp++;
       altarg = cp;
-      cp = strchr (altarg, ' ');
+      while (*cp && !isblank (*cp))
+	cp++;
     }
   *cp = '\0';
 
   free (mapin);
   mapin = strdup (altarg);
 
-  while (*++cp == ' ')
-    continue;
+  do
+    cp++;
+  while (*cp && isblank(*cp));
   free (mapout);
   mapout = strdup (cp);
 }
@@ -2394,6 +2404,7 @@ domap (char *name)
 	      break;
 	    }
 	  /* Fall through, as '$' must be used verbatim.  */
+	  /* FALLTHROUGH */
 	default:
 	  if (*cp2 != *cp1)
 	    {
@@ -2516,7 +2527,7 @@ domap (char *name)
 }
 
 void
-setsunique (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setsunique (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   sunique = !sunique;
@@ -2525,7 +2536,7 @@ setsunique (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
 }
 
 void
-setrunique (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+setrunique (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   runique = !runique;
@@ -2535,7 +2546,7 @@ setrunique (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
 
 /* change directory to parent directory */
 void
-cdup (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+cdup (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   if (command ("CDUP") == ERROR && code == 500)
@@ -2563,7 +2574,7 @@ restart (int argc, char **argv)
 
 /* show remote system type */
 void
-syst (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+syst (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
 
   command ("SYST");

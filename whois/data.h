@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free Software
-  Foundation, Inc.
+  Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -68,7 +67,6 @@ const char *rwhois_servers[] = {
 const char *gtlds[] = {
   ".com",
   ".net",
-  ".org",
   ".edu",
   NULL
 };
@@ -81,6 +79,11 @@ const char *hide_strings[] = {
   "Signature Domains' Whois Service", "agree to abide by the above",
   "Access to ASNIC", "by this policy.",
   "* Copyright (C) 1998 by SGNIC", "* modification.",
+  "% The RIPE Database is subject", "\n",
+  "% This query was served", "\n",
+  "% Copyright LACNIC", "%  only for lawful",
+  "% Copyright (c) Nic.br", "%  any similar purpose",
+  "# ARIN WHOIS data and services", "# Copyright 19",
   NULL, NULL
 };
 
@@ -105,6 +108,11 @@ struct ip_del
 
 struct ip_del ip_assign[] = {
 #include "ip_del.h"
+  {0, 0, NULL}
+};
+
+struct ip_del ip6_assign[] = {
+#include "ip6_del.h"
   {0, 0, NULL}
 };
 

@@ -1,10 +1,10 @@
 /* GNU's read utmp module.
 
-   Copyright (C) 1992-2001, 2003-2006, 2009-2015 Free Software Foundation, Inc.
+   Copyright (C) 1992-2001, 2003-2006, 2009-2022 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by jla; revised by djm */
 
@@ -27,15 +27,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 
 #include "xalloc.h"
 
-#if USE_UNLOCKED_IO
-# include "unlocked-io.h"
+/* Each of the FILE streams in this file is only used in a single thread.  */
+#include "unlocked-io.h"
+
+#if 8 <= __GNUC__
+# pragma GCC diagnostic ignored "-Wsizeof-pointer-memaccess"
 #endif
 
 /* Copy UT->ut_name into storage obtained from malloc.  Then remove any
@@ -88,8 +90,8 @@ int
 read_utmp (char const *file, size_t *n_entries, STRUCT_UTMP **utmp_buf,
            int options)
 {
-  size_t n_read = 0;
-  size_t n_alloc = 0;
+  idx_t n_read = 0;
+  idx_t n_alloc = 0;
   STRUCT_UTMP *utmp = NULL;
   STRUCT_UTMP *u;
 
@@ -97,7 +99,7 @@ read_utmp (char const *file, size_t *n_entries, STRUCT_UTMP **utmp_buf,
      Solaris' utmpname returns 1 upon success -- which is contrary
      to what the GNU libc version does.  In addition, older GNU libc
      versions are actually void.   */
-  UTMP_NAME_FUNCTION (file);
+  UTMP_NAME_FUNCTION ((char *) file);
 
   SET_UTMP_ENT ();
 
@@ -105,7 +107,7 @@ read_utmp (char const *file, size_t *n_entries, STRUCT_UTMP **utmp_buf,
     if (desirable_utmp_entry (u, options))
       {
         if (n_read == n_alloc)
-          utmp = x2nrealloc (utmp, &n_alloc, sizeof *utmp);
+          utmp = xpalloc (utmp, &n_alloc, 1, -1, sizeof *utmp);
 
         utmp[n_read++] = *u;
       }
@@ -124,11 +126,11 @@ int
 read_utmp (char const *file, size_t *n_entries, STRUCT_UTMP **utmp_buf,
            int options)
 {
-  size_t n_read = 0;
-  size_t n_alloc = 0;
+  idx_t n_read = 0;
+  idx_t n_alloc = 0;
   STRUCT_UTMP *utmp = NULL;
   int saved_errno;
-  FILE *f = fopen (file, "r");
+  FILE *f = fopen (file, "re");
 
   if (! f)
     return -1;
@@ -136,7 +138,7 @@ read_utmp (char const *file, size_t *n_entries, STRUCT_UTMP **utmp_buf,
   for (;;)
     {
       if (n_read == n_alloc)
-        utmp = x2nrealloc (utmp, &n_alloc, sizeof *utmp);
+        utmp = xpalloc (utmp, &n_alloc, 1, -1, sizeof *utmp);
       if (fread (&utmp[n_read], sizeof utmp[n_read], 1, f) == 0)
         break;
       n_read += desirable_utmp_entry (&utmp[n_read], options);

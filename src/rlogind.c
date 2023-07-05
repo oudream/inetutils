@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-  2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-  2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -116,7 +114,7 @@
 #include <progname.h>
 #include <argp.h>
 #include <libinetutils.h>
-#include "unused-parameter.h"
+#include "attribute.h"
 #include "xalloc.h"
 
 /*
@@ -308,7 +306,7 @@ void prevent_routing (int fd, struct auth_data *ap);
 #endif
 
 void
-rlogind_sigchld (int signo _GL_UNUSED_PARAMETER)
+rlogind_sigchld (int signo MAYBE_UNUSED)
 {
   pid_t pid;
   int status;
@@ -487,7 +485,7 @@ static struct argp_option options[] = {
 
 static error_t
 parse_opt (int key, char *arg,
-	   struct argp_state *state _GL_UNUSED_PARAMETER)
+	   struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -631,20 +629,11 @@ find_listenfd (int family, int port)
 {
   int fd, on = 1;
   socklen_t size;
-#if HAVE_DECL_GETADDRINFO
   int rc;
   struct sockaddr_storage saddr;
   struct addrinfo hints, *ai, *res;
   char portstr[16];
-#else /* !HAVE_DECL_GETADDRINFO */
-  struct sockaddr_in saddr;
 
-  /* Enforce IPv4, lacking getaddrinfo().  */
-  if (family != AF_INET)
-    return -1;
-#endif
-
-#if HAVE_DECL_GETADDRINFO
   memset (&hints, 0, sizeof hints);
   hints.ai_family = family;
   hints.ai_flags = AI_PASSIVE;
@@ -673,17 +662,6 @@ find_listenfd (int family, int port)
   size = ai->ai_addrlen;
   memcpy (&saddr, ai->ai_addr, ai->ai_addrlen);
   freeaddrinfo (res);
-
-#else /* !HAVE_DECL_GETADDRINFO */
-  size = sizeof saddr;
-  memset (&saddr, 0, size);
-  saddr.sin_family = family;
-# ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
-  saddr.sin_len = sizeof (struct sockaddr_in);
-# endif
-  saddr.sin_addr.s_addr = htonl (INADDR_ANY);
-  saddr.sin_port = htons (port);
-#endif
 
   fd = socket (family, SOCK_STREAM, 0);
   if (fd < 0)
@@ -814,11 +792,7 @@ rlogin_daemon (int maxchildren, int port)
 	{
 	  pid_t pid;
 	  socklen_t size;
-#if HAVE_DECL_GETADDRINFO
 	  struct sockaddr_storage saddr;
-#else /* !HAVE_DECL_GETADDRINFO */
-	  struct sockaddr_in saddr;
-#endif
 
 	  if (!FD_ISSET (listenfd[j], &lfdset))
 	    continue;
@@ -859,13 +833,8 @@ rlogin_daemon (int maxchildren, int port)
 int
 rlogind_auth (int fd, struct auth_data *ap)
 {
-#if HAVE_DECL_GETNAMEINFO && HAVE_DECL_GETADDRINFO
   int rc;
   char hoststr[NI_MAXHOST];
-#else
-  struct hostent *hp;
-  void *addrp;
-#endif
   char *hostname = "";
   int authenticated = 0;
   int port;
@@ -877,43 +846,20 @@ rlogind_auth (int fd, struct auth_data *ap)
   switch (ap->from.ss_family)
     {
     case AF_INET6:
-#if !HAVE_DECL_GETADDRINFO || !HAVE_DECL_GETNAMEINFO
-      addrp = (void *) &((struct sockaddr_in6 *) &ap->from)->sin6_addr;
-#endif
       port = ntohs (((struct sockaddr_in6 *) &ap->from)->sin6_port);
       break;
     case AF_INET:
     default:
-#if !HAVE_DECL_GETADDRINFO || !HAVE_DECL_GETNAMEINFO
-      addrp = (void *) &((struct sockaddr_in *) &ap->from)->sin_addr;
-#endif
       port = ntohs (((struct sockaddr_in *) &ap->from)->sin_port);
     }
 
   confirmed = 0;
 
   /* Check the remote host name */
-#if HAVE_DECL_GETNAMEINFO
   rc = getnameinfo ((struct sockaddr *) &ap->from, ap->fromlen,
 		    hoststr, sizeof (hoststr), NULL, 0, NI_NAMEREQD);
   if (!rc)
     hostname = hoststr;
-#else /* !HAVE_DECL_GETNAMEINFO */
-  switch (ap->from.ss_family)
-    {
-    case AF_INET6:
-      hp = gethostbyaddr (addrp, sizeof (struct in6_addr),
-			  ap->from.ss_family);
-      break;
-    case AF_INET:
-    default:
-      hp = gethostbyaddr (addrp, sizeof (struct in_addr),
-			  ap->from.ss_family);
-    }
-  if (hp)
-    hostname = hp->h_name;
-#endif /* !HAVE_DECL_GETNAMEINFO */
-
   else if (reverse_required)
     {
       syslog (LOG_NOTICE, "can't resolve remote IP address");
@@ -927,7 +873,6 @@ rlogind_auth (int fd, struct auth_data *ap)
   if (verify_hostname || in_local_domain (ap->hostname))
     {
       int match = 0;
-#if HAVE_DECL_GETADDRINFO && HAVE_DECL_GETNAMEINFO
       struct addrinfo hints, *ai, *res;
       char astr[INET6_ADDRSTRLEN];
 
@@ -951,14 +896,6 @@ rlogind_auth (int fd, struct auth_data *ap)
 	    }
 	  freeaddrinfo (res);
 	}
-#else /* !HAVE_DECL_GETADDRINFO */
-      for (hp = gethostbyname (ap->hostname); hp && !match; hp->h_addr_list++)
-	{
-	  if (hp->h_addr_list[0] == NULL)
-	    break;
-	  match = memcmp (hp->h_addr_list[0], addrp, hp->h_length) == 0;
-	}
-#endif /* !HAVE_DECL_GETADDRINFO */
       if (!match)
 	{
 	  syslog (LOG_ERR | LOG_AUTH, "cannot verify matching IP for %s (%s)",
@@ -1172,7 +1109,7 @@ rlogind_mainloop (int infd, int outfd)
   struct auth_data auth_data;
   char addrstr[INET6_ADDRSTRLEN];
   const char *reply;
-  int true;
+  int on;
   char c;
   int authenticated;
   pid_t pid;
@@ -1204,16 +1141,16 @@ rlogind_mainloop (int infd, int outfd)
 	  ? ntohs (((struct sockaddr_in6 *) &auth_data.from)->sin6_port)
 	  : ntohs (((struct sockaddr_in *) &auth_data.from)->sin_port));
 
-  true = 1;
+  on = 1;
   if (keepalive
-      && setsockopt (infd, SOL_SOCKET, SO_KEEPALIVE, &true, sizeof true) < 0)
+      && setsockopt (infd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on) < 0)
     syslog (LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
 
 #if defined IP_TOS && defined IPPROTO_IP && defined IPTOS_LOWDELAY
-  true = IPTOS_LOWDELAY;
+  on = IPTOS_LOWDELAY;
   if (auth_data.from.ss_family == AF_INET &&
       setsockopt (infd, IPPROTO_IP, IP_TOS,
-		  (char *) &true, sizeof true) < 0)
+		  (char *) &on, sizeof on) < 0)
     syslog (LOG_WARNING, "setsockopt (IP_TOS): %m");
 #endif
 
@@ -1260,10 +1197,10 @@ rlogind_mainloop (int infd, int outfd)
     }
 
   /* Parent */
-  true = 1;
-  IF_NOT_ENCRYPT (ioctl (infd, FIONBIO, &true));
-  ioctl (master, FIONBIO, &true);
-  ioctl (master, TIOCPKT, &true);
+  on = 1;
+  IF_NOT_ENCRYPT (ioctl (infd, FIONBIO, &on));
+  ioctl (master, FIONBIO, &on);
+  ioctl (master, TIOCPKT, &on);
   netf = infd;			/* Needed for cleanup() */
   setsig (SIGCHLD, cleanup);
   protocol (infd, master, &auth_data);
@@ -2290,7 +2227,7 @@ do_pam_check (int infd, struct auth_data *ap, const char *service)
 static int
 rlogin_conv (int num, const struct pam_message **pam_msg,
 	     struct pam_response **pam_resp,
-	     void *data _GL_UNUSED_PARAMETER)
+	     void *data MAYBE_UNUSED)
 {
   struct pam_response *resp;
 

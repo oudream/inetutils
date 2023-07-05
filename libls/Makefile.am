@@ -1,6 +1,5 @@
 #
-# Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
-# 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+# Copyright (C) 2000-2022 Free Software Foundation, Inc.
 #
 # This file is part of GNU Inetutils.
 #
@@ -24,6 +23,6 @@ noinst_LIBRARIES = $(libls_BUILD)
 
 EXTRA_LIBRARIES = libls.a
 
-libls_a_SOURCES = cmp.c stat_flags.c ls.c print.c util.c fts.c
+libls_a_SOURCES = cmp.c stat_flags.c ls.c print.c util.c
 
-noinst_HEADERS = extern.h ls.h fts.h
+noinst_HEADERS = extern.h ls.h

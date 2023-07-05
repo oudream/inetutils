@@ -1,11 +1,11 @@
 /* save-cwd.c -- Save and restore current working directory.
 
-   Copyright (C) 1995, 1997-1998, 2003-2006, 2009-2015 Free Software
+   Copyright (C) 1995, 1997-1998, 2003-2006, 2009-2022 Free Software
    Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Jim Meyering.  */
 
@@ -24,13 +24,11 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "chdir-long.h"
 #include "unistd--.h"
-#include "cloexec.h"
 
 #if GNULIB_FCNTL_SAFER
 # include "fcntl--.h"
@@ -64,16 +62,15 @@ save_cwd (struct saved_cwd *cwd)
 {
   cwd->name = NULL;
 
-  cwd->desc = open (".", O_SEARCH);
+  cwd->desc = open (".", O_SEARCH | O_CLOEXEC);
   if (!GNULIB_FCNTL_SAFER)
-    cwd->desc = fd_safer (cwd->desc);
+    cwd->desc = fd_safer_flag (cwd->desc, O_CLOEXEC);
   if (cwd->desc < 0)
     {
       cwd->name = getcwd (NULL, 0);
       return cwd->name ? 0 : -1;
     }
 
-  set_cloexec_flag (cwd->desc, true);
   return 0;
 }
 

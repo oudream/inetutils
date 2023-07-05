@@ -1,6 +1,5 @@
 /* printif.c -- print an interface configuration
-  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-  2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -47,7 +46,7 @@
 #include <arpa/inet.h>
 #include "ifconfig.h"
 #include "xalloc.h"
-#include <unused-parameter.h>
+#include <attribute.h>
 
 FILE *ostream;			/* Either stdout or stderror.  */
 int column_stdout;		/* The column position of the cursor on stdout.  */
@@ -119,7 +118,7 @@ struct format_handle format_handles[] = {
 /* Various helper functions to get the job done.  */
 
 void
-put_char (format_data_t form _GL_UNUSED_PARAMETER, char c)
+put_char (format_data_t form MAYBE_UNUSED, char c)
 {
   switch (c)
     {
@@ -147,7 +146,7 @@ put_string (format_data_t form, const char *s)
 }
 
 void
-put_int (format_data_t form _GL_UNUSED_PARAMETER,
+put_int (format_data_t form MAYBE_UNUSED,
 	 int argc, char *argv[], int nr)
 {
   char *fmt;
@@ -204,7 +203,7 @@ put_int (format_data_t form _GL_UNUSED_PARAMETER,
 }
 
 void
-put_ulong (format_data_t form _GL_UNUSED_PARAMETER,
+put_ulong (format_data_t form MAYBE_UNUSED,
 	   int argc, char *argv[], unsigned long value)
 {
   char *fmt;
@@ -345,8 +344,8 @@ put_flags (format_data_t form, int argc, char *argv[], int flags)
 }
 
 void
-put_flags_short (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-		 char *argv[] _GL_UNUSED_PARAMETER, int flags)
+put_flags_short (format_data_t form, int argc MAYBE_UNUSED,
+		 MAYBE_UNUSED char *argv[], int flags)
 {
   char buf[IF_FORMAT_FLAGS_BUFSIZE];
   if_format_flags (flags, buf, sizeof buf);
@@ -377,9 +376,9 @@ format_handler (const char *name, format_data_t form, int argc, char *argv[])
 }
 
 void
-fh_nothing (format_data_t form _GL_UNUSED_PARAMETER,
-	    int argc _GL_UNUSED_PARAMETER,
-	    char *argv[] _GL_UNUSED_PARAMETER)
+fh_nothing (format_data_t form MAYBE_UNUSED,
+	    int argc MAYBE_UNUSED,
+	    MAYBE_UNUSED char *argv[])
 {
 }
 
@@ -438,15 +437,15 @@ fh_foreachformat (format_data_t form, int argc, char *argv[])
 }
 
 void
-fh_newline (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-	    char *argv[] _GL_UNUSED_PARAMETER)
+fh_newline (format_data_t form, int argc MAYBE_UNUSED,
+	    MAYBE_UNUSED char *argv[])
 {
   put_char (form, '\n');
 }
 
 void
-fh_tabulator (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-	      char *argv[] _GL_UNUSED_PARAMETER)
+fh_tabulator (format_data_t form, int argc MAYBE_UNUSED,
+	      MAYBE_UNUSED char *argv[])
 {
   put_char (form, '\t');
 }
@@ -613,14 +612,14 @@ fh_error (format_data_t form, int argc, char *argv[])
 }
 
 void
-fh_progname (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-	     char *argv[] _GL_UNUSED_PARAMETER)
+fh_progname (format_data_t form, int argc MAYBE_UNUSED,
+	     MAYBE_UNUSED char *argv[])
 {
   put_string (form, program_name);
 }
 
 void
-fh_exit (format_data_t form _GL_UNUSED_PARAMETER,
+fh_exit (format_data_t form MAYBE_UNUSED,
 	 int argc, char *argv[])
 {
   int err = 0;
@@ -632,8 +631,8 @@ fh_exit (format_data_t form _GL_UNUSED_PARAMETER,
 }
 
 void
-fh_name (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-	 char *argv[] _GL_UNUSED_PARAMETER)
+fh_name (format_data_t form, int argc MAYBE_UNUSED,
+	 MAYBE_UNUSED char *argv[])
 {
   put_string (form, form->name);
 }
@@ -645,8 +644,8 @@ fh_index_query (format_data_t form, int argc, char *argv[])
 }
 
 void
-fh_index (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-	  char *argv[] _GL_UNUSED_PARAMETER)
+fh_index (format_data_t form, int argc MAYBE_UNUSED,
+	  MAYBE_UNUSED char *argv[])
 {
   int indx = if_nametoindex (form->name);
 
@@ -719,24 +718,32 @@ fh_brdaddr_query (format_data_t form, int argc, char *argv[])
 # ifdef SIOCGIFFLAGS
   int f;
   int rev;
-  unsigned int uflags = (unsigned short) form->ifr->ifr_flags;
+  unsigned int uflags;
 
-# ifdef ifr_flagshigh
-  uflags |= (unsigned short) form->ifr->ifr_flagshigh << 16;
-# endif /* ifr_flagshigh */
+  f = if_nameztoflag ("BROADCAST", &rev);
 
-  if (0 == (f = if_nameztoflag ("BROADCAST", &rev))
-      || (ioctl (form->sfd, SIOCGIFFLAGS, form->ifr) < 0)
-      || ((f & uflags) == 0))
+  if (f == 0 || (ioctl (form->sfd, SIOCGIFFLAGS, form->ifr) < 0))
     {
       select_arg (form, argc, argv, 1);
       return;
     }
-# endif
+
+  uflags = (unsigned short) form->ifr->ifr_flags;
+#  ifdef ifr_flagshigh
+  uflags |= (unsigned short) form->ifr->ifr_flagshigh << 16;
+#  endif /* ifr_flagshigh */
+
+  if ((f & uflags) == 0)
+    {
+      select_arg (form, argc, argv, 1);
+      return;
+    }
+# endif /* SIOCGIFFLAGS */
+
   if (ioctl (form->sfd, SIOCGIFBRDADDR, form->ifr) >= 0)
     select_arg (form, argc, argv, 0);
   else
-#endif
+#endif /* SIOCGIFBRDADDR */
     select_arg (form, argc, argv, 1);
 }
 
@@ -763,24 +770,32 @@ fh_dstaddr_query (format_data_t form, int argc, char *argv[])
 # ifdef SIOCGIFFLAGS
   int f;
   int rev;
-  unsigned int uflags = (unsigned short) form->ifr->ifr_flags;
+  unsigned int uflags;
 
-#  ifdef ifr_flagshigh
-  uflags |= (unsigned short) form->ifr->ifr_flagshigh << 16;
-#  endif /* ifr_flagshigh */
+  f = if_nameztoflag ("POINTOPOINT", &rev);
 
-  if (0 == (f = if_nameztoflag ("POINTOPOINT", &rev))
-      || (ioctl (form->sfd, SIOCGIFFLAGS, form->ifr) < 0)
-      || ((f & uflags) == 0))
+  if (f == 0 || (ioctl (form->sfd, SIOCGIFFLAGS, form->ifr) < 0))
     {
       select_arg (form, argc, argv, 1);
       return;
     }
-# endif
+
+  uflags = (unsigned short) form->ifr->ifr_flags;
+#  ifdef ifr_flagshigh
+  uflags |= (unsigned short) form->ifr->ifr_flagshigh << 16;
+#  endif /* ifr_flagshigh */
+
+  if ((f & uflags) == 0)
+    {
+      select_arg (form, argc, argv, 1);
+      return;
+    }
+# endif /* SIOCGIFFLAGS */
+
   if (ioctl (form->sfd, SIOCGIFDSTADDR, form->ifr) >= 0)
     select_arg (form, argc, argv, 0);
   else
-#endif
+#endif /* SIOCGIFDSTADDR */
     select_arg (form, argc, argv, 1);
 }
 
@@ -913,8 +928,8 @@ fh_media_query (format_data_t form, int argc, char *argv[])
 }
 
 void
-fh_media (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-	  char *argv[] _GL_UNUSED_PARAMETER)
+fh_media (format_data_t form, int argc MAYBE_UNUSED,
+	  MAYBE_UNUSED char *argv[])
 {
   /* Must be overridden by a system dependent implementation.  */
   put_string (form, "(not known)");
@@ -930,8 +945,8 @@ fh_status_query (format_data_t form, int argc, char *argv[])
 }
 
 void
-fh_status (format_data_t form, int argc _GL_UNUSED_PARAMETER,
-	   char *argv[] _GL_UNUSED_PARAMETER)
+fh_status (format_data_t form, int argc MAYBE_UNUSED,
+	   MAYBE_UNUSED char *argv[])
 {
   /* Must be overridden by a system dependent implementation.  */
   put_string (form, "(not known)");

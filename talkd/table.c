@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-  2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
-  Free Software Foundation, Inc.
+  Copyright (C) 1996-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -21,7 +19,7 @@
 #include <config.h>
 
 #include <intalkd.h>
-#include "unused-parameter.h"
+#include "attribute.h"
 
 typedef struct request_table table_t;
 
@@ -93,7 +91,7 @@ lookup_request (CTL_MSG * request,
 
 static int
 fuzzy_comp (table_t * ptr, CTL_MSG * request,
-	    time_t * unused _GL_UNUSED_PARAMETER)
+	    time_t * unused MAYBE_UNUSED)
 {
   if (ptr->request.type == LEAVE_INVITE
       && strcmp (request->l_name, ptr->request.r_name) == 0

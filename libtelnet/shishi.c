@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
-  2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -32,7 +31,7 @@
 # include <ctype.h>
 # include <syslog.h>
 # include <string.h>
-# include <unused-parameter.h>
+# include <attribute.h>
 
 # include "auth.h"
 # include "misc.h"
@@ -101,7 +100,7 @@ Shishi *shishi_telnet = NULL;
 
 /* FIXME: Reverse return code! */
 int
-krb5shishi_init (TN_Authenticator * ap _GL_UNUSED_PARAMETER,
+krb5shishi_init (TN_Authenticator * ap MAYBE_UNUSED,
 		 int server)
 {
   if (server)
@@ -136,7 +135,7 @@ delayed_shishi_init (void)
 }
 
 void
-krb5shishi_cleanup (TN_Authenticator * ap _GL_UNUSED_PARAMETER)
+krb5shishi_cleanup (TN_Authenticator * ap MAYBE_UNUSED)
 {
   if (shishi_handle == NULL)
     return;
@@ -395,7 +394,7 @@ krb5shishi_reply (TN_Authenticator * ap, unsigned char *data, int cnt)
 }
 
 int
-krb5shishi_status (TN_Authenticator * ap _GL_UNUSED_PARAMETER,
+krb5shishi_status (TN_Authenticator * ap MAYBE_UNUSED,
 		   char *name, size_t len, int level)
 {
   int status;

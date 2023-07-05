@@ -1,18 +1,18 @@
 /* exit() exit codes for some BSD system programs.
-   Copyright (C) 2003, 2006-2015 Free Software Foundation, Inc.
+   Copyright (C) 2003, 2006-2022 Free Software Foundation, Inc.
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
+   This file is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of the
+   License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
+   This file is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GNU Lesser General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Simon Josefsson based on sysexits(3) man page */
 
@@ -27,7 +27,7 @@
 
 /* IRIX 6.5 has an <unistd.h> that defines a macro EX_OK with a nonzero
    value.  Override it.  See
-   <http://lists.gnu.org/archive/html/bug-gnulib/2007-03/msg00361.html>  */
+   <https://lists.gnu.org/r/bug-gnulib/2007-03/msg00361.html>  */
 # ifdef __sgi
 #  include <unistd.h>
 #  undef EX_OK
@@ -46,7 +46,7 @@
 #ifndef _@GUARD_PREFIX@_SYSEXITS_H
 #define _@GUARD_PREFIX@_SYSEXITS_H
 
-#if !@HAVE_SYSEXITS_H@
+#if !(@HAVE_SYSEXITS_H@ && defined EX_USAGE)
 
 # define EX_OK 0 /* same value as EXIT_SUCCESS */
 

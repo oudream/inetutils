@@ -1,18 +1,18 @@
 /* Open a pseudo-terminal.
-   Copyright (C) 2010-2015 Free Software Foundation, Inc.
+   Copyright (C) 2010-2022 Free Software Foundation, Inc.
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
+   This file is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation; either version 2.1 of the
+   License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
+   This file is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GNU Lesser General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include <config.h>
 
@@ -32,15 +32,15 @@ rpl_openpty (int *amaster, int *aslave, char *name,
                   (struct winsize *) winp);
 }
 
-#elif (defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__ /* mingw */
+#elif defined _WIN32 && !defined __CYGWIN__ /* mingw */
 
 # include <errno.h>
 
 int
-openpty (int *amaster _GL_UNUSED, int *aslave _GL_UNUSED,
-         char *name _GL_UNUSED,
-         struct termios const *termp _GL_UNUSED,
-         struct winsize const *winp _GL_UNUSED)
+openpty (_GL_UNUSED int *amaster, _GL_UNUSED int *aslave,
+         _GL_UNUSED char *name,
+         _GL_UNUSED struct termios const *termp,
+         _GL_UNUSED struct winsize const *winp)
 {
   /* Mingw lacks pseudo-terminals altogether.  */
   errno = ENOSYS;

@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-  2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-  2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -81,7 +79,7 @@
 # include <string.h>
 
 # include <stdio.h>
-# include <unused-parameter.h>
+# include <attribute.h>
 # include "genget.h"
 
 /* String representation of our capabilities.
@@ -668,8 +666,8 @@ encrypt_reply (unsigned char *data, int cnt)
  * Called when a ENCRYPT START command is received.
  */
 void
-encrypt_start (unsigned char *data _GL_UNUSED_PARAMETER,
-	       int cnt _GL_UNUSED_PARAMETER)
+encrypt_start (unsigned char *data MAYBE_UNUSED,
+	       int cnt MAYBE_UNUSED)
 {
   Encryptions *ep;
 
@@ -751,8 +749,8 @@ encrypt_request_end (void)
  * can.
  */
 void
-encrypt_request_start (unsigned char *data _GL_UNUSED_PARAMETER,
-		       int cnt _GL_UNUSED_PARAMETER)
+encrypt_request_start (unsigned char *data MAYBE_UNUSED,
+		       int cnt MAYBE_UNUSED)
 {
   if (encrypt_mode == 0)
     {

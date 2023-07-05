@@ -1,7 +1,5 @@
 dnl
-dnl Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-dnl 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
-dnl Free Software Foundation, Inc.
+dnl Copyright (C) 1996-2022 Free Software Foundation, Inc.
 dnl
 dnl This file is part of GNU Inetutils.
 dnl
@@ -67,17 +65,15 @@ AC_DEFUN([IU_CHECK_KRB5],
 
     ## Check for new MIT kerberos V support
     LIBS="$saved_LIBS -lkrb5 -lk5crypto -lcom_err"
-    AC_TRY_LINK([], [return krb5_init_context((void *) 0); ],
-      [KRB5_IMPL="MIT"
-       KRB5_LIBS="$KRB5_LDFLAGS -lkrb5 -lk5crypto -lcom_err"], )
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[return krb5_init_context((void *) 0); ]])],[KRB5_IMPL="MIT"
+       KRB5_LIBS="$KRB5_LDFLAGS -lkrb5 -lk5crypto -lcom_err"],[])
 
     ## Heimdal kerberos V support
     if test "$KRB5_IMPL" = "none"; then
       LIBS="$saved_LIBS -lkrb5 -ldes -lasn1 -lroken -lcrypt -lcom_err"
-      AC_TRY_LINK([], [return krb5_init_context((void *) 0); ],
-        [KRB5_IMPL="Heimdal"
-         KRB5_LIBS="$KRB5_LDFLAGS -lkrb5 -ldes -lasn1 -lroken -lcrypt -lcom_err"]
-         , )
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[return krb5_init_context((void *) 0); ]])],[KRB5_IMPL="Heimdal"
+         KRB5_LIBS="$KRB5_LDFLAGS -lkrb5 -ldes -lasn1 -lroken -lcrypt -lcom_err"
+         ],[])
     fi
 
     ### FIXME: Implement a robust distinction between
@@ -88,10 +84,9 @@ AC_DEFUN([IU_CHECK_KRB5],
     ## OpenBSD variant of Heimdal
     if test "$KRB5_IMPL" = "none"; then
       LIBS="$saved_LIBS -lkrb5 -lcrypto"
-      AC_TRY_LINK([], [return krb5_init_context((void *) 0); ],
-        [KRB5_IMPL="OpenBSD-Heimdal"
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[return krb5_init_context((void *) 0); ]])],[KRB5_IMPL="OpenBSD-Heimdal"
 	 KRB5_CFLAGS="-I/usr/include/kerberosV"
-         KRB5_LIBS="$KRB5_LDFLAGS -lkrb5 -lcrypto -lasn1 -ldes"], )
+         KRB5_LIBS="$KRB5_LDFLAGS -lkrb5 -lcrypto -lasn1 -ldes"],[])
     fi
 
     ## Old MIT Kerberos V
@@ -99,9 +94,8 @@ AC_DEFUN([IU_CHECK_KRB5],
     ## -lk5crypto. This may conflict with OpenSSL.
     if test "$KRB5_IMPL" = "none"; then
       LIBS="$saved_LIBS -lkrb5 -lcrypto -lcom_err"
-      AC_TRY_LINK([], [return krb5_init_context((void *) 0); ],
-        [KRB5_IMPL="OldMIT"
-         KRB5_LIBS="$KRB5_LDFLAGS $KRB4_LIBS -lkrb5 -lcrypto -lcom_err"], )
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[return krb5_init_context((void *) 0); ]])],[KRB5_IMPL="OldMIT"
+         KRB5_LIBS="$KRB5_LDFLAGS $KRB4_LIBS -lkrb5 -lcrypto -lcom_err"],[])
     fi
 
     LDFLAGS="$saved_LDFLAGS"

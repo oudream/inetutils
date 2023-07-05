@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-  2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013,
-  2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1994-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -68,7 +66,7 @@
 # include <netinet/ip.h>
 #endif
 
-#define FTP_NAMES
+#define FTP_NAMES 1
 #include <arpa/ftp.h>
 #include <arpa/inet.h>
 #include <arpa/telnet.h>
@@ -103,7 +101,7 @@
 #include <progname.h>
 #include <libinetutils.h>
 #include "extern.h"
-#include "unused-parameter.h"
+#include "attribute.h"
 
 #ifndef LINE_MAX
 # define LINE_MAX 2048
@@ -145,6 +143,8 @@ char portstr[8];		/* Numeric port as string.  */
 
 /* Requester credentials.  */
 struct credentials cred;
+
+jmp_buf errcatch;
 
 static struct sockaddr_storage ctrl_addr;	/* Control address.  */
 static socklen_t ctrl_addrlen;
@@ -294,8 +294,8 @@ static struct argp_option options[] = {
   { "timeout", 't', "TIMEOUT", 0,
     "set default idle timeout",
     GRID+1 },
-  { "max-timeout", 'T', NULL, 0,
-    "reset maximum value of timeout allowed",
+  { "max-timeout", 'T', "MAX_TIMEOUT", 0,
+    "set maximum value of timeout allowed",
     GRID+1 },
   { "non-rfc2577", OPT_NONRFC2577, NULL, 0,
     "neglect RFC 2577 by giving info on missing users",
@@ -631,7 +631,7 @@ sigquit (int signo)
 
 
 static void
-lostconn (int signo _GL_UNUSED_PARAMETER)
+lostconn (int signo MAYBE_UNUSED)
 {
   if (debug)
     syslog (LOG_DEBUG, "lost connection");
@@ -1916,7 +1916,7 @@ dologout (int status)
 }
 
 static void
-myoob (int signo _GL_UNUSED_PARAMETER)
+myoob (int signo MAYBE_UNUSED)
 {
   char *cp;
 

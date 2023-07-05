@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
-  Free Software Foundation, Inc.
+  Copyright (C) 2007-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -49,12 +48,14 @@
 #include <limits.h>
 #include <assert.h>
 #include <argp.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include <icmp.h>
 #ifdef HAVE_LOCALE_H
 # include <locale.h>
 #endif
-#ifdef HAVE_IDNA_H
+#if defined HAVE_IDN2_H && defined HAVE_IDN2
+# include <idn2.h>
+#elif defined HAVE_IDNA_H
 # include <idna.h>
 #endif
 
@@ -75,6 +76,7 @@ typedef struct trace
 {
   int icmpfd, udpfd;
   enum trace_type type;
+  int no_ident;
   struct sockaddr_in to, from;
   int ttl;
   struct timeval tsent;
@@ -301,13 +303,13 @@ main (int argc, char **argv)
 # endif
 #endif
 
-#ifdef HAVE_IDN
+#if defined HAVE_IDN || defined HAVE_IDN2
   rc = idna_to_ascii_lz (hostname, &rhost, 0);
   free (hostname);
 
   if (rc)
     error (EXIT_FAILURE, 0, "unknown host");
-#else /* !HAVE_IDN */
+#else /* !HAVE_IDN && !HAVE_IDN2 */
   rhost = hostname;
 #endif
 
@@ -351,7 +353,7 @@ main (int argc, char **argv)
 
 void
 do_try (trace_t * trace, const int hop,
-	const int max_hops _GL_UNUSED_PARAMETER,
+	const int max_hops MAYBE_UNUSED,
 	const int max_tries)
 {
   fd_set readset;
@@ -476,6 +478,7 @@ trace_init (trace_t * t, const struct sockaddr_in to,
   t->type = type;
   t->to = to;
   t->ttl = opt_ttl;
+  t->no_ident = 0;
 
   if (t->type == TRACE_UDP)
     {
@@ -494,6 +497,21 @@ trace_init (trace_t * t, const struct sockaddr_in to,
       if (protocol)
 	{
 	  t->icmpfd = socket (PF_INET, SOCK_RAW, protocol->p_proto);
+	  if (t->icmpfd < 0 && (errno == EPERM || errno == EACCES))
+	    {
+	      /* A subprivileged user on GNU/Linux might be allowed
+	       * to create ICMP packets from a datagram socket.
+	       * Such packets are always severely crippled.
+	       */
+	      errno = 0;
+	      t->icmpfd = socket (PF_INET, SOCK_DGRAM, protocol->p_proto);
+	      t->no_ident++;
+
+	      /* Recover error message for non-Linux systems.  */
+	      if (errno == EPROTONOSUPPORT)
+		errno = EPERM;
+	    }
+
 	  if (t->icmpfd < 0)
 	    error (EXIT_FAILURE, errno, "socket");
 
@@ -609,7 +627,7 @@ trace_read (trace_t * t, int * type, int * code)
 
       if (ic->icmp_type == ICMP_ECHOREPLY
 	  && (ntohs (ic->icmp_seq) != seqno
-	      || ntohs (ic->icmp_id) != pid))
+	      || (ntohs (ic->icmp_id) != pid && t->no_ident == 0)))
 	return -1;
 
       if (ic->icmp_type == ICMP_TIME_EXCEEDED
@@ -685,6 +703,17 @@ trace_write (trace_t * t)
     case TRACE_ICMP:
       {
 	icmphdr_t hdr;
+	unsigned int i;
+
+	/* Deposit deterministic values throughout the header!  */
+	for (i = 0; i < sizeof (hdr); ++i)
+	  *((char *) &hdr + i) = i;
+
+	/* The subprivileged use case of ICMP sent over datagram
+	 * sockets needs extra help with identification of target.
+	 */
+	if (t->no_ident)
+	  *((int *) &hdr + 12 / sizeof(int)) = dest.sin_addr.s_addr;
 
 	/* The sequence number is updated to a valid value!  */
 	if (icmp_echo_encode ((unsigned char *) &hdr, sizeof (hdr),

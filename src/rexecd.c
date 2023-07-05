@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-  2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-  2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -111,7 +109,7 @@
 #include <progname.h>
 #include <argp.h>
 #include <error.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include "libinetutils.h"
 
 void die (int code, const char *fmt, ...);
@@ -136,8 +134,8 @@ static struct argp_option options[] = {
 };
 
 static error_t
-parse_opt (int key, char *arg _GL_UNUSED_PARAMETER,
-	   struct argp_state *state _GL_UNUSED_PARAMETER)
+parse_opt (int key, char *arg MAYBE_UNUSED,
+	   struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -558,8 +556,9 @@ doit (int f, struct sockaddr *fromp, socklen_t fromlen)
 
 #ifdef HAVE_SETLOGIN
       /* Not sufficient to call setpgid() on BSD systems.  */
-      if (setsid () < 0)
-	syslog (LOG_ERR, "setsid() failed: %m");
+      if (getsid ((pid_t) 0) != getpid ())
+	if (setsid () < 0)
+	  syslog (LOG_ERR, "setsid() failed: %m");
 #elif defined HAVE_SETPGID /* !HAVE_SETLOGIN */
       setpgid (0, getpid ());
 #endif
@@ -728,7 +727,7 @@ getstr (const char *err)
 static int
 rexec_conv (int num, const struct pam_message **pam_msg,
 	    struct pam_response **pam_resp,
-	    void *data _GL_UNUSED_PARAMETER)
+	    void *data MAYBE_UNUSED)
 {
   struct pam_response *resp;
 

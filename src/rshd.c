@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-  2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013,
-  2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1994-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -145,7 +143,7 @@
 #include <error.h>
 #include <progname.h>
 #include <argp.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include <libinetutils.h>
 #include "xalloc.h"
 
@@ -270,7 +268,7 @@ extern int iruserok (uint32_t raddr, int superuser,
 #endif /* WITH_PAM */
 
 static error_t
-parse_opt (int key, char *arg, struct argp_state *state _GL_UNUSED_PARAMETER)
+parse_opt (int key, char *arg, struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -1835,8 +1833,9 @@ doit (int sockfd, struct sockaddr *fromp, socklen_t fromlen)
    */
 #ifdef HAVE_SETLOGIN
   /* Not sufficient to call setpgid() on BSD systems.  */
-  if (setsid () < 0)
-    syslog (LOG_ERR, "setsid() failed: %m");
+  if (getsid ((pid_t) 0) != getpid ())
+    if (setsid () < 0)
+      syslog (LOG_ERR, "setsid() failed: %m");
 
   if (setlogin (pwd->pw_name) < 0)
     syslog (LOG_ERR, "setlogin() failed: %m");
@@ -2091,7 +2090,7 @@ topdomain (const char *h)
 static int
 rsh_conv (int num, const struct pam_message **pam_msg,
 	    struct pam_response **pam_resp,
-	    void *data _GL_UNUSED_PARAMETER)
+	    void *data MAYBE_UNUSED)
 {
   struct pam_response *resp;
 

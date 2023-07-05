@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -63,7 +61,7 @@
 #include <errno.h>
 #include <arpa/telnet.h>
 #include <sys/select.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 
 #include "ring.h"
 
@@ -941,7 +939,7 @@ NetSetPgrp (int fd)
  */
 
 void
-deadpeer (int sig _GL_UNUSED_PARAMETER)
+deadpeer (int sig MAYBE_UNUSED)
 {
   setcommandmode ();
   longjmp (peerdied, -1);
@@ -949,7 +947,7 @@ deadpeer (int sig _GL_UNUSED_PARAMETER)
 
 
 void
-intr (int sig _GL_UNUSED_PARAMETER)
+intr (int sig MAYBE_UNUSED)
 {
   if (localchars)
     {
@@ -962,7 +960,7 @@ intr (int sig _GL_UNUSED_PARAMETER)
 
 
 void
-intr2 (int sig _GL_UNUSED_PARAMETER)
+intr2 (int sig MAYBE_UNUSED)
 {
   if (localchars)
     {
@@ -978,7 +976,7 @@ intr2 (int sig _GL_UNUSED_PARAMETER)
 
 #ifdef	SIGTSTP
 void
-susp (int sig _GL_UNUSED_PARAMETER)
+susp (int sig MAYBE_UNUSED)
 {
   if ((rlogin != _POSIX_VDISABLE) && rlogin_susp ())
     return;
@@ -989,7 +987,7 @@ susp (int sig _GL_UNUSED_PARAMETER)
 
 #ifdef	SIGWINCH
 void
-sendwin (int sig _GL_UNUSED_PARAMETER)
+sendwin (int sig MAYBE_UNUSED)
 {
   if (connected)
     {
@@ -1000,7 +998,7 @@ sendwin (int sig _GL_UNUSED_PARAMETER)
 
 #ifdef	SIGINFO
 void
-ayt (int sig _GL_UNUSED_PARAMETER)
+ayt (int sig MAYBE_UNUSED)
 {
   if (connected)
     sendayt ();
@@ -1273,7 +1271,7 @@ process_rings (int netin, int netout, int netex, int ttyin, int ttyout,
 		  /*
 		   * Bogosity.  We have to do the read
 		   * to clear the atmark to get out of
-		   * an infinate loop.
+		   * an infinite loop.
 		   */
 		  i = read (net, netiring.supply + c, canread - c);
 		  if (i > 0)

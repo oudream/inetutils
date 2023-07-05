@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -83,12 +81,14 @@
 #include <stdarg.h>
 #include <sys/select.h>
 
-#ifdef HAVE_IDNA_H
+#if defined HAVE_IDN2_H && defined HAVE_IDN2
+# include <idn2.h>
+#elif defined HAVE_IDNA_H
 # include <idna.h>
 #endif
 
 #include "ftp_var.h"
-#include "unused-parameter.h"
+#include "attribute.h"
 
 #if !HAVE_DECL_FCLOSE
 /* Some systems don't declare fclose in <stdio.h>, so do it ourselves.  */
@@ -99,8 +99,6 @@ extern int fclose (FILE *);
 /* Some systems don't declare pclose in <stdio.h>, so do it ourselves.  */
 extern int pclose (FILE *);
 #endif
-
-extern int h_errno;
 
 int data = -1;
 int abrtflag = 0;
@@ -133,9 +131,13 @@ hookup (char *host, int port)
   int s, tos;
   socklen_t len;
   static char hostnamebuf[80];
-  char *rhost;
+  char *rhost, *p;
 
-#ifdef HAVE_IDN
+  p = strrchr (host, '@');
+  if (p && p != host && isprint (p[1]))
+    host = ++p;
+
+#if defined HAVE_IDN || defined HAVE_IDN2
   status = idna_to_ascii_lz (host, &rhost, 0);
   if (status)
     {
@@ -143,7 +145,7 @@ hookup (char *host, int port)
       code = -1;
       return ((char *) 0);
     }
-#else /* !HAVE_IDN */
+#else /* !HAVE_IDN && !HAVE_IDN2 */
   rhost = strdup (host);
 #endif
 
@@ -171,9 +173,10 @@ hookup (char *host, int port)
     }
 
   if (res->ai_canonname)
-    strncpy (hostnamebuf, res->ai_canonname, sizeof (hostnamebuf));
+    strncpy (hostnamebuf, res->ai_canonname, sizeof (hostnamebuf) - 1);
   else
-    strncpy (hostnamebuf, rhost, sizeof (hostnamebuf));
+    strncpy (hostnamebuf, rhost, sizeof (hostnamebuf) - 1);
+  hostnamebuf[sizeof (hostnamebuf) - 1] = 0;
 
   hostname = hostnamebuf;
   free (rhost);
@@ -292,8 +295,11 @@ bad:
 int
 login (char *host)
 {
+#if !HAVE_DECL_GETPASS
+  extern char *getpass ();
+#endif
   char tmp[80];
-  char *user, *pass, *acct;
+  char *user, *pass, *acct, *p;
   int n, aflag = 0;
 
   user = pass = acct = 0;
@@ -302,6 +308,15 @@ login (char *host)
       code = -1;
       return (0);
     }
+
+  p = strrchr (host, '@');
+  if (user == NULL && p && p != host && isprint (p[1]))
+    {
+      *p = 0;
+      user = host;
+      host = ++p;
+    }
+
   while (user == NULL)
     {
       char *myname = getlogin ();
@@ -392,7 +407,7 @@ login (char *host)
 }
 
 void
-cmdabort (int sig _GL_UNUSED_PARAMETER)
+cmdabort (int sig MAYBE_UNUSED)
 {
 
   printf ("\n");
@@ -522,7 +537,10 @@ getreply (int expecteof)
 	  if (pflag == 2)
 	    {
 	      if (c != '\r' && c != ')')
-		*pt++ = c;
+		{
+		  if (pt < &pasv[sizeof(pasv) - 1])
+		    *pt++ = c;
+		}
 	      else
 		{
 		  *pt = '\0';
@@ -576,7 +594,7 @@ empty (fd_set *mask, int sec)
 jmp_buf sendabort;
 
 void
-abortsend (int sig _GL_UNUSED_PARAMETER)
+abortsend (int sig MAYBE_UNUSED)
 {
 
   mflag = 0;
@@ -881,7 +899,7 @@ abort:
 jmp_buf recvabort;
 
 void
-abortrecv (int sig _GL_UNUSED_PARAMETER)
+abortrecv (int sig MAYBE_UNUSED)
 {
 
   mflag = 0;
@@ -1344,6 +1362,13 @@ initconn (void)
 		  uint32_t *pu32 = (uint32_t *) &data_addr_sa4->sin_addr.s_addr;
 		  pu32[0] = htonl ( (h[0] << 24) | (h[1] << 16) | (h[2] << 8) | h[3]);
 		}
+		if (data_addr_sa4->sin_addr.s_addr
+		    != ((struct sockaddr_in *) &hisctladdr)->sin_addr.s_addr)
+		  {
+		    printf ("Passive mode address mismatch.\n");
+		    (void) command ("ABOR");	/* Cancel any open connection.  */
+		    goto bad;
+		  }
 	    } /* LPSV IPv4 */
 	  else /* IPv6 */
 	    {
@@ -1374,6 +1399,13 @@ initconn (void)
 		  pu32[2] = htonl ( (h[8] << 24) | (h[9] << 16) | (h[10] << 8) | h[11]);
 		  pu32[3] = htonl ( (h[12] << 24) | (h[13] << 16) | (h[14] << 8) | h[15]);
 		}
+		if (data_addr_sa6->sin6_addr.s6_addr
+		    != ((struct sockaddr_in6 *) &hisctladdr)->sin6_addr.s6_addr)
+		  {
+		    printf ("Passive mode address mismatch.\n");
+		    (void) command ("ABOR");	/* Cancel any open connection.  */
+		    goto bad;
+		  }
 	    } /* LPSV IPv6 */
 	}
       else /* !EPSV && !LPSV */
@@ -1394,6 +1426,13 @@ initconn (void)
 			 | ((a2 & 0xff) << 8) | (a3 & 0xff) );
 	      data_addr_sa4->sin_port =
 		  htons (((p0 & 0xff) << 8) | (p1 & 0xff));
+	      if (data_addr_sa4->sin_addr.s_addr
+		  != ((struct sockaddr_in *) &hisctladdr)->sin_addr.s_addr)
+		{
+		  printf ("Passive mode address mismatch.\n");
+		  (void) command ("ABOR");	/* Cancel any open connection.  */
+		  goto bad;
+		}
 	    } /* PASV */
 	  else
 	    {
@@ -1627,7 +1666,7 @@ tvsub (struct timeval *tdiff, struct timeval *t1, struct timeval *t0)
 }
 
 void
-psabort (int sig _GL_UNUSED_PARAMETER)
+psabort (int sig MAYBE_UNUSED)
 {
 
   abrtflag++;
@@ -1713,10 +1752,10 @@ pswitch (int flag)
   ip->ntflg = ntflag;
   ntflag = op->ntflg;
   strncpy (ip->nti, ntin, sizeof (ntin) - 1);
-  (ip->nti)[strlen (ip->nti)] = '\0';
+  (ip->nti)[sizeof (ntin) - 1] = '\0';
   strcpy (ntin, op->nti);
   strncpy (ip->nto, ntout, sizeof (ntout) - 1);
-  (ip->nto)[strlen (ip->nto)] = '\0';
+  (ip->nto)[sizeof (ntout) - 1] = '\0';
   strcpy (ntout, op->nto);
   ip->mapflg = mapflag;
   mapflag = op->mapflg;
@@ -1740,7 +1779,7 @@ pswitch (int flag)
 }
 
 void
-abortpt (int sig _GL_UNUSED_PARAMETER)
+abortpt (int sig MAYBE_UNUSED)
 {
 
   printf ("\n");
@@ -1882,7 +1921,7 @@ abort:
 }
 
 void
-reset (int argc _GL_UNUSED_PARAMETER, char **argv _GL_UNUSED_PARAMETER)
+reset (int argc MAYBE_UNUSED, char **argv MAYBE_UNUSED)
 {
   fd_set mask;
   int nfnd = 1;

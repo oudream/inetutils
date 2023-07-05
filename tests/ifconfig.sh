@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+# Copyright (C) 2011-2022 Free Software Foundation, Inc.
 #
 # This file is part of GNU Inetutils.
 #
@@ -60,6 +60,11 @@ if test ! -x "$IFCONFIG"; then
     exit 77
 fi
 
+if test "$TEST_IPV4" = "no"; then
+    echo >&2 "Disabled IPv4 testing.  Skipping test."
+    exit 77
+fi
+
 if test -z "${VERBOSE+set}"; then
     silence=:
     bucket='>/dev/null'
@@ -99,7 +104,7 @@ errno=0
 # Check for loopback address in all formats displaying the
 # standard address $TARGET, commonly 127.0.0.1.
 #
-for fmt in ${FORMAT:-gnu gnu-one-entry net-tools osf unix}; do
+for fmt in ${FORMAT:-"gnu gnu-one-entry net-tools osf unix"}; do
     $silence echo "Checking format $fmt."
     find_lo_addr $fmt || { errno=1; echo >&2 "Failed with format '$fmt'."; }
 done

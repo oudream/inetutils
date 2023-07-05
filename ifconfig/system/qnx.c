@@ -1,6 +1,5 @@
 /* qnx.c -- QNX specific code for ifconfig
-  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-  2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -54,6 +53,13 @@ system_parse_opt (struct ifconfig **ifp, char option, char *optarg)
 
 int
 system_parse_opt_rest (struct ifconfig **ifp, int argc, char *argv[])
+{
+  return 0;
+}
+
+int
+system_preconfigure (int sfd MAYBE_UNUSED,
+		     struct ifreq *ifr MAYBE_UNUSED)
 {
   return 0;
 }

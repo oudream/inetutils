@@ -1,6 +1,5 @@
 /* generic.c -- generic system code for ifconfig
-  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-  2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -22,6 +21,8 @@
 #include <config.h>
 
 #include "../ifconfig.h"
+
+#include <attribute.h>
 
 
 /* Output format stuff.  */
@@ -36,19 +37,32 @@ const char *system_help;
 struct argp_child system_argp_child;
 
 int
-system_parse_opt (struct ifconfig **ifp, char option, char *optarg)
+system_parse_opt (struct ifconfig **ifp MAYBE_UNUSED,
+		  char option MAYBE_UNUSED,
+		  char *optarg MAYBE_UNUSED)
 {
   return 0;
 }
 
 int
-system_parse_opt_rest (struct ifconfig **ifp, int argc, char *argv[])
+system_parse_opt_rest (struct ifconfig **ifp MAYBE_UNUSED,
+		       int argc MAYBE_UNUSED,
+		       MAYBE_UNUSED char *argv[])
 {
   return 0;
 }
 
 int
-system_configure (int sfd, struct ifreq *ifr, struct system_ifconfig *ifs)
+system_preconfigure (int sfd MAYBE_UNUSED,
+		     struct ifreq *ifr MAYBE_UNUSED)
+{
+  return 0;
+}
+
+int
+system_configure (int sfd MAYBE_UNUSED,
+		  struct ifreq *ifr MAYBE_UNUSED,
+		  struct system_ifconfig *ifs MAYBE_UNUSED)
 {
   return 0;
 }

@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free Software
-  Foundation, Inc.
+  Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -41,7 +40,7 @@
 #include <error.h>
 #include <xalloc.h>
 #include <inttostr.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 
 #define SYSLOG_NAMES
 #include <syslog.h>
@@ -61,14 +60,12 @@ static char *unixsock = NULL;
 static char *source;
 static char *pidstr;
 
-#if HAVE_DECL_GETADDRINFO
-# if HAVE_IPV6
+#if HAVE_IPV6
 static int host_family = AF_UNSPEC;
-# else
+#else
 /* Fall back to only IPv4.  */
 static int host_family = AF_INET;
-# endif /* !HAVE_IPV6 */
-#endif /* HAVE_DECL_GETADDRINFO */
+#endif /* !HAVE_IPV6 */
 
 
 
@@ -115,9 +112,9 @@ parse_level (char *str)
   if (p)
     *p++ = 0;
 
-  fac = decode (str, facilitynames, "facility");
+  fac = decode (str, (CODE *) facilitynames, "facility");
   if (p)
-    prio = decode (p, prioritynames, "priority");
+    prio = decode (p, (CODE *) prioritynames, "priority");
 
   return MAKE_PRI (fac, prio);
 }
@@ -141,9 +138,7 @@ open_socket (void)
   union logger_sockaddr sockaddr;
   socklen_t socklen;
   int family;
-#if HAVE_DECL_GETADDRINFO
   int ret;
-#endif
 
   /* A UNIX socket name can be specified in two ways.
    * Zero length of `unixsock' is handled automatically.  */
@@ -165,13 +160,7 @@ open_socket (void)
     }
   else
     {
-#if HAVE_DECL_GETADDRINFO
       struct addrinfo hints, *ai, *res;
-#else
-      struct hostent *hp;
-      struct servent *sp;
-      unsigned short port;
-#endif /* !HAVE_DECL_GETADDRINFO */
       char *p;
 
 #if HAVE_IPV6
@@ -209,7 +198,6 @@ open_socket (void)
       if (!p)
 	p = "syslog";
 
-#if HAVE_DECL_GETADDRINFO
       memset (&hints, 0, sizeof (hints));
       hints.ai_socktype = SOCK_DGRAM;
 
@@ -275,43 +263,13 @@ open_socket (void)
 	error (EXIT_FAILURE, EADDRNOTAVAIL, "%s:%s", host, p);
 
       /* Existing socket can be returned now.
-       * This handles AF_INET and AF_INET6 in case
-       * HAVE_DECL_GETADDRINFO is true.  */
+       * This handles AF_INET and AF_INET6.  */
       return;
-
-#else /* !HAVE_DECL_GETADDRINFO */
-
-      sockaddr.sinet.sin_family = AF_INET;
-      family = PF_INET;
-
-      hp = gethostbyname (host);
-      if (hp)
-	sockaddr.sinet.sin_addr.s_addr = *(unsigned long*) hp->h_addr_list[0];
-      else if (inet_aton (host, (struct in_addr *) &sockaddr.sinet.sin_addr)
-	       != 1)
-	error (EXIT_FAILURE, 0, "unknown host name");
-
-      if (isdigit (*p))
-	{
-	  char *end;
-	  unsigned long n = strtoul (p, &end, 10);
-	  if (*end || (port = n) != n)
-	    error (EXIT_FAILURE, 0, "%s: invalid port number", p);
-	  port = htons (port);
-	}
-      else if ((sp = getservbyname (p, "udp")) != NULL)
-	port = sp->s_port;
-      else
-	error (EXIT_FAILURE, 0, "%s: unknown service name", p);
-
-      sockaddr.sinet.sin_port = port;
-#endif /* !HAVE_DECL_GETADDRINFO */
 
       socklen = sizeof (sockaddr.sinet);
     }
 
-  /* Execution arrives here for AF_UNIX and for
-   * situations with !HAVE_DECL_GETADDRINFO.  */
+  /* Execution arrives here for AF_UNIX.  */
 
   fd = socket (family, SOCK_DGRAM, 0);
   if (fd < 0)
@@ -368,7 +326,7 @@ send_to_syslog (const char *msg)
       ioptr->iov_base = (char*) msg;
       ioptr->iov_len = msglen;
 
-      if (msg[msglen - 1] != '\n')
+      if (msglen > 0 && msg[msglen - 1] != '\n')
 	{
 	  /* provide a newline */
 	  ioptr++;
@@ -415,7 +373,7 @@ static struct argp_option argp_options[] = {
 };
 
 static error_t
-parse_opt (int key, char *arg, struct argp_state *state _GL_UNUSED_PARAMETER)
+parse_opt (int key, char *arg, struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {

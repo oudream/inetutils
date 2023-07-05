@@ -1,6 +1,5 @@
 #
-# Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-# 2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+# Copyright (C) 2001-2022 Free Software Foundation, Inc.
 #
 # This file is part of GNU Inetutils.
 #
@@ -26,8 +25,10 @@ noinst_HEADERS = \
 	linux.h \
 	solaris.h \
 	qnx.h \
+	hurd.h \
 	bsd.c \
 	generic.c \
 	linux.c \
 	solaris.c \
-	qnx.c
+	qnx.c \
+	hurd.c

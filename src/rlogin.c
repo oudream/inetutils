@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -102,7 +100,7 @@
 
 #include <progname.h>
 #include "libinetutils.h"
-#include "unused-parameter.h"
+#include "attribute.h"
 #include "xalloc.h"
 
 #ifdef KERBEROS
@@ -926,7 +924,7 @@ int dosigwinch;
  * FIXME: Race condition due to sendwindow() in signal handler?
  */
 void
-writeroob (int signo _GL_UNUSED_PARAMETER)
+writeroob (int signo MAYBE_UNUSED)
 {
   if (dosigwinch == 0)
     {
@@ -945,7 +943,7 @@ writeroob (int signo _GL_UNUSED_PARAMETER)
 /* FIXME: System dependent race condition due to done().
  */
 void
-catch_child (int signo _GL_UNUSED_PARAMETER)
+catch_child (int signo MAYBE_UNUSED)
 {
   int status;
   pid_t pid;
@@ -1112,7 +1110,7 @@ stop (char cmdc)
 }
 
 void
-sigwinch (int signo _GL_UNUSED_PARAMETER)
+sigwinch (int signo MAYBE_UNUSED)
 {
   struct winsize ws;
 
@@ -1171,7 +1169,7 @@ int rcvcnt, rcvstate;
 char rcvbuf[8 * 1024];
 
 void
-oob (int signo _GL_UNUSED_PARAMETER)
+oob (int signo MAYBE_UNUSED)
 {
   char mark;
   struct termios tt;

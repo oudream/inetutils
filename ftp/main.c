@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -80,7 +78,7 @@
 #include "ftp_var.h"
 
 #include "libinetutils.h"
-#include "unused-parameter.h"
+#include "attribute.h"
 
 #ifdef HAVE_READLINE_READLINE_H
 # include <readline/readline.h>
@@ -141,7 +139,7 @@ static struct argp_option argp_options[] = {
 };
 
 static error_t
-parse_opt (int key, char *arg, struct argp_state *state _GL_UNUSED_PARAMETER)
+parse_opt (int key, char *arg, struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -258,6 +256,10 @@ main (int argc, char *argv[])
       verbose++;
       if (!prompt)
 	prompt = DEFAULT_PROMPT;
+
+      cp = getenv ("TERM");
+      if (cp == NULL || strcmp (cp, "dumb") == 0)
+	usereadline = 0;
     }
   else
     usereadline = 0;
@@ -286,16 +288,15 @@ main (int argc, char *argv[])
   if (argc > 0)
     {
       char *xargv[5];
+      int i;
 
       if (setjmp (toplevel))
 	exit (EXIT_SUCCESS);
       signal (SIGINT, intr);
       signal (SIGPIPE, lostpeer);
       xargv[0] = program_invocation_name;
-      xargv[1] = argv[0];
-      xargv[2] = argv[1];
-      xargv[3] = argv[2];
-      xargv[4] = NULL;
+      for (i = 0; i < argc && i < 3; i++)
+	xargv[i + 1] = argv[i];
       setpeer (argc + 1, xargv);
     }
   top = setjmp (toplevel) == 0;
@@ -312,13 +313,13 @@ main (int argc, char *argv[])
 }
 
 void
-intr (int sig _GL_UNUSED_PARAMETER)
+intr (int sig MAYBE_UNUSED)
 {
   longjmp (toplevel, 1);
 }
 
 void
-lostpeer (int sig _GL_UNUSED_PARAMETER)
+lostpeer (int sig MAYBE_UNUSED)
 {
   if (connected)
     {

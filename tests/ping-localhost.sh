@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free Software
-# Foundation, Inc.
+# Copyright (C) 2009-2022 Free Software Foundation, Inc.
 #
 # This file is part of GNU Inetutils.
 #
@@ -26,6 +25,16 @@
 
 . ./tools.sh
 
+PROTOCOLS=/etc/protocols
+if test ! -r $PROTOCOLS; then
+    cat <<-EOT >&2
+	This test requires the availability of "$PROTOCOLS",
+	a file which can not be found in the current system.
+	Therefore skipping this test.
+	EOT
+    exit 77
+fi
+
 PING=${PING:-../ping/ping$EXEEXT}
 TARGET=${TARGET:-127.0.0.1}
 
@@ -42,7 +51,12 @@ if [ $VERBOSE ]; then
     $PING --version
 fi
 
-if [ `func_id_uid` != 0 ]; then
+if test "$TEST_IPV4" = "no" && test "$TEST_IPV6" = "no"; then
+    echo >&2 "Inet socket testing is disabled.  Skipping test."
+    exit 77
+fi
+
+if test `func_id_uid` != 0; then
     echo "ping needs to run as root"
     exit 77
 fi
@@ -50,7 +64,9 @@ fi
 errno=0
 errno2=0
 
-$PING -n -c 1 $TARGET || errno=$?
+test "$TEST_IPV4" != "no" && test -x $PING &&
+    { $PING -n -c 1 $TARGET || errno=$?; }
+
 test $errno -eq 0 || echo "Failed at pinging $TARGET." >&2
 
 # Host might not have been built with IPv6 support.

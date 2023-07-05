@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-  2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-  2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -36,7 +34,7 @@
 # include <ctype.h>
 # include <syslog.h>
 # include <string.h>
-# include <unused-parameter.h>
+# include <attribute.h>
 
 # include "auth.h"
 # include "misc.h"
@@ -120,7 +118,7 @@ Data (TN_Authenticator * ap, int type, krb5_pointer d, int c)
 
 /* FIXME: Reverse return code! */
 int
-kerberos5_init (TN_Authenticator * ap _GL_UNUSED_PARAMETER, int server)
+kerberos5_init (TN_Authenticator * ap MAYBE_UNUSED, int server)
 {
   str_data[3] = server ? TELQUAL_REPLY : TELQUAL_IS;
   if (telnet_context == 0 && krb5_init_context (&telnet_context))
@@ -427,7 +425,7 @@ kerberos5_reply (TN_Authenticator * ap, unsigned char *data, int cnt)
 }
 
 int
-kerberos5_status (TN_Authenticator * ap _GL_UNUSED_PARAMETER,
+kerberos5_status (TN_Authenticator * ap MAYBE_UNUSED,
 		  char *name, size_t len, int level)
 {
   if (level < AUTH_USER)

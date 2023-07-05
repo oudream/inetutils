@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-  2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-  2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -314,15 +312,21 @@ telrcv (void)
 	    case EC:
 	    case EL:
 	      {
-		cc_t ch;
+		cc_t ch = (cc_t) (_POSIX_VDISABLE);
 
 		DEBUG (debug_options, 1, printoption ("td: recv IAC", c));
 		ptyflush ();	/* half-hearted */
 		init_termbuf ();
 		if (c == EC)
-		  ch = *slctab[SLC_EC].sptr;
+		  {
+		    if (slctab[SLC_EC].sptr)
+		      ch = *slctab[SLC_EC].sptr;
+		  }
 		else
-		  ch = *slctab[SLC_EL].sptr;
+		  {
+		    if (slctab[SLC_EL].sptr)
+		      ch = *slctab[SLC_EL].sptr;
+		  }
 		if (ch != (cc_t) (_POSIX_VDISABLE))
 		  pty_output_byte ((unsigned char) ch);
 		break;
@@ -636,6 +640,7 @@ willoption (int option)
 	      slctab[SLC_XON].defset.flag |= SLC_DEFAULT;
 	      slctab[SLC_XOFF].defset.flag &= ~SLC_LEVELBITS;
 	      slctab[SLC_XOFF].defset.flag |= SLC_DEFAULT;
+	      /* FALLTHROUGH */
 	    case TELOPT_TTYPE:
 	    case TELOPT_SGA:
 	    case TELOPT_NAWS:

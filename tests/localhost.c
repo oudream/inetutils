@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
-  Free Software Foundation, Inc.
+  Copyright (C) 2007-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -23,11 +22,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include <progname.h>
 
 int
-main (int argc _GL_UNUSED_PARAMETER, char **argv)
+main (int argc MAYBE_UNUSED, char **argv)
 {
   char *p = localhost ();
   set_program_name (argv[0]);

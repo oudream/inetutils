@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -83,7 +81,7 @@
 # include <utime.h>		/* If we don't have utimes(), use utime(). */
 #endif
 #include <progname.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include <libinetutils.h>
 #include <argp.h>
 #include <error.h>
@@ -201,7 +199,7 @@ static struct argp_option options[] = {
 };
 
 static error_t
-parse_opt (int key, char *arg, struct argp_state *state _GL_UNUSED_PARAMETER)
+parse_opt (int key, char *arg, struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -568,7 +566,7 @@ toremote (char *targ, int argc, char *argv[])
 void
 tolocal (int argc, char *argv[])
 {
-  int i, len, tos;
+  int i, tos;
   char *bp, *host, *src, *suser, *vect[1];
 #if defined IP_TOS && defined IPPROTO_IP && defined IPTOS_THROUGHPUT
   struct sockaddr_storage ss;
@@ -580,8 +578,6 @@ tolocal (int argc, char *argv[])
       src = colon (argv[i]);
       if (!src)
 	{			/* Local to local. */
-	  len = strlen (PATH_CP) + strlen (argv[i]) +
-		strlen (target) + 20;
 	  if (asprintf (&bp, "exec %s%s%s %s %s",
 			PATH_CP,
 			iamrecursive ? " -R" : "",
@@ -746,7 +742,7 @@ source (int argc, char *argv[])
 	}
 #define RCP_MODEMASK	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
       snprintf (buf, sizeof buf, "C%04o %jd %s\n",
-		stb.st_mode & RCP_MODEMASK, (intmax_t) stb.st_size, last);
+		(int) stb.st_mode & RCP_MODEMASK, (intmax_t) stb.st_size, last);
       write (rem, buf, strlen (buf));
       if (response () < 0)
 	goto next;
@@ -831,7 +827,7 @@ rsource (char *name, struct stat *statp)
       return;
     }
 
-  sprintf (buf, "D%04o %d %s\n", statp->st_mode & RCP_MODEMASK, 0, last);
+  sprintf (buf, "D%04o %d %s\n", (int) statp->st_mode & RCP_MODEMASK, 0, last);
   write (rem, buf, strlen (buf));
   free (buf);
 
@@ -876,9 +872,9 @@ sink (int argc, char *argv[])
   enum
   { YES, NO, DISPLAYED } wrerr;
   BUF *bp;
-  off_t i, j;
+  off_t i, j, size;
   int amt, count, exists, first, mask, mode, ofd, omode;
-  int setimes, size, targisdir, wrerrno;
+  int setimes, targisdir, wrerrno;
   char ch, *cp, *np, *targ, *vect[1], buf[BUFSIZ];
   const char *why;
 
@@ -995,18 +991,10 @@ sink (int argc, char *argv[])
 	  need = strlen (targ) + strlen (cp) + 250;
 	  if (need > cursize)
 	    {
-	      free (namebuf);
-	      namebuf = malloc (need);
-	      if (namebuf)
-		cursize = need;
-	      else
-		{
-		  run_err ("%s", strerror (errno));
-		  cursize = 0;
-		  continue;
-		}
+	      if (!(namebuf = malloc (need)))
+		run_err ("%s", strerror (errno));
 	    }
-	  snprintf (namebuf, cursize, "%s%s%s", targ, *targ ? "/" : "", cp);
+	  snprintf (namebuf, need, "%s%s%s", targ, *targ ? "/" : "", cp);
 	  np = namebuf;
 	}
       else
@@ -1498,7 +1486,7 @@ allocbuf (BUF * bp, int fd, int blksize)
 }
 
 void
-lostconn (int signo _GL_UNUSED_PARAMETER)
+lostconn (int signo MAYBE_UNUSED)
 {
   if (!iamremote)
     error (0, 0, "lost connection");

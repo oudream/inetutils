@@ -1,7 +1,5 @@
 # configure.ac - Configuration for inetutils
-# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-# 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
-# Free Software Foundation, Inc.
+# Copyright (C) 1996-2022 Free Software Foundation, Inc.
 #
 # This file is part of GNU Inetutils.
 #
@@ -18,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see `http://www.gnu.org/licenses/'.
 
-AC_PREREQ(2.59)
+AC_PREREQ(2.64)
 
 AC_INIT([GNU inetutils],
- m4_esyscmd([build-aux/git-version-gen .tarball-version 's/inetutils-/v/;s/_/./g']),
+ m4_esyscmd([build-aux/git-version-gen .tarball-version]),
  [bug-inetutils@gnu.org])
 
 AC_CONFIG_SRCDIR([src/inetd.c])
@@ -88,7 +86,7 @@ AC_ARG_WITH([pam],
                            [Add support for PAM]))
 AC_ARG_WITH([idn],
   AS_HELP_STRING([--with-idn[[=DIR]]],
-		 [Use IDN support, with optional inclusion directory]), ,
+		 [Use IDN or IDN2 support, with optional inclusion directory]), ,
 		 [with_idn=no])
 AC_ARG_WITH([libidn-prefix],
   AS_HELP_STRING([--with-libidn-prefix[[=DIR]]],
@@ -125,8 +123,6 @@ IU_ENABLE_CLIENT(traceroute)
 
 AM_SILENT_RULES([yes])
 
-AC_ISC_POSIX
-
 ### Checks for programs.
 AC_PROG_CC
 gl_EARLY
@@ -137,6 +133,8 @@ AC_PATH_PROG(MKTEMP, mktemp, mktemp)
 AC_PATH_PROG(NETSTAT, netstat, netstat)
 AC_PATH_PROG(RM, rm, rm)
 AC_PROG_CPP
+AC_PROG_EGREP
+AC_PROG_FGREP
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
@@ -145,6 +143,8 @@ AC_PROG_LN_S
 AC_PROG_SED
 AM_MISSING_PROG(HELP2MAN, help2man, $missing_dir)
 AC_ARG_VAR(GREP, [Location of preferred 'grep' utility.])
+AC_ARG_VAR(EGREP, [Location of preferred 'egrep' utility.])
+AC_ARG_VAR(FGREP, [Location of preferred 'fgrep' utility.])
 AC_ARG_VAR(SED, [Location of preferred 'sed' utility.])
 AC_ARG_VAR(DD, [Location of 'dd'.])
 AC_ARG_VAR(MKTEMP, [Location of 'mktemp'.])
@@ -156,15 +156,9 @@ gl_INIT
 
 ### Checks for libraries.
 AC_SEARCH_LIBS([inet_ntoa], [nsl])
-AC_SEARCH_LIBS([getpeername], [socket])
 
 # See if a termcap library is available (under one of several names)
 IU_LIB_TERMCAP
-
-# Find libreadline -- the ftp client will be built without
-# command editing and history capability if readline() cannot
-# be found, neither in libreadline, nor in libedit.
-gl_FUNC_READLINE
 
 # See if there's a separate libcrypt (many systems put crypt there).
 AC_CHECK_LIB(crypt, crypt, LIBCRYPT=-lcrypt)
@@ -180,17 +174,6 @@ AC_CHECK_LIB(util, logoutx, LIBUTIL=-lutil)
 AC_CHECK_LIB(util, logwtmp, LIBUTIL=-lutil)
 AC_CHECK_LIB(util, logwtmpx, LIBUTIL=-lutil)
 AC_SUBST(LIBUTIL)
-
-# FreeBSD 9.0 has changed access to wtmp system, abolishing
-# logout(), logwtmp(), etcetera.  We need to use LIBUTIL
-# for rpl_openpty() and forkpty() in libgnu.a.
-if test "$ac_cv_func_login_tty" = yes \
-   || test "$ac_cv_have_decl_openpty" = yes; then
-  # Make sure that linking contains `-lutil'.
-  if test -z "$LIBUTIL"; then
-    LIBUTIL=-lutil
-  fi
-fi
 
 # Check if they want support for PAM.  Certain daemons like ftpd have
 # support for it.
@@ -214,8 +197,8 @@ AC_SUBST(LIBDL)
 AC_SUBST(LIBPAM)
 AC_SUBST(FTPD_LIBPAM)
 
-# Can we use libls? but we must have fchdir()
-if test "$enable_libls" = yes && test "$ac_cv_func_fchdir" = yes ; then
+# Use libls?
+if test "$enable_libls" = yes; then
   LIBLS="../libls/libls.a"
   libls_BUILD="libls.a"
   AC_DEFINE([WITH_LIBLS], 1, [Define to one if you have -lls])
@@ -251,6 +234,15 @@ else
     AC_MSG_WARN([curses is not available, so not building talk])
   fi
   IU_DISABLE_TARGET(talk)
+fi
+
+# The function rcmd() is crucial for remote shells, but is not
+# always implemented in libraries intended for embedded systems.
+# Check for its availability in order to later disable our rcp,
+# rlogin, and rsh when no alternative is present.
+AC_CHECK_FUNC(rcmd, , , [#include <netdb.h>])
+if test "$ac_cv_func_rcmd" = yes; then
+  AC_DEFINE([WITH_RCMD], 1, [Define to one if you can use rcmd.])
 fi
 
 # NetBSD offers orcmd() and orcmd_af() for getting
@@ -308,6 +300,17 @@ else
   fi
 fi
 
+# Disable targets rcp, rlogin, and rsh when no rcmd variant is available.
+if test "$ac_cv_func_rcmd" != yes \
+   && test "$ac_cv_func_orcmd" != yes \
+   && test "$ac_cv_func_rcmd_af" != yes \
+   && test "$ac_cv_func_orcmd_af" != yes
+then
+  AC_MSG_WARN([Disabling rcp, rlogin and rsh, since no rcmd.])
+  IU_DISABLE_TARGET(rcp)
+  IU_DISABLE_TARGET(rlogin)
+  IU_DISABLE_TARGET(rsh)
+fi
 
 # FIXME: Make this test case a bit more robust.  Remove KRB4
 LIBAUTH=
@@ -407,6 +410,23 @@ if test ".$LIBAUTH" != .; then
                    [Define to one if you want encryption.])
 fi
 
+# Make IPv4 tests configurable in testing stage.
+
+AC_ARG_ENABLE([ipv4],
+  AS_HELP_STRING([--disable-ipv4], [disable IPv4 testing]),
+  [case "${enable_ipv4}" in
+  no)
+    AC_MSG_NOTICE([Disabling IPv4 tests at user request])
+    ipv4=no
+    ;;
+  *)
+    ipv4=yes
+    ;;
+  esac],
+  [ipv4=auto]
+)
+AC_SUBST(TEST_IPV4, [$ipv4])
+
 # Checks for IPv6 support.
 
 AC_ARG_ENABLE([ipv6],
@@ -463,7 +483,7 @@ else
 fi
 
 if test "$ipv6" = "no" || test "$working_ipv6" = "no";then
-  ping6_BUILD=''
+  IU_DISABLE_TARGET([ping6])
 else
   working_icmp6=yes
   AC_CHECK_HEADER(netinet/icmp6.h, , working_icmp6=no,
@@ -552,7 +572,7 @@ else
 
   if test "$working_icmp6" = "no"; then
     AC_MSG_WARN([ICMPv6 support not available, disabling ping6])
-    ping6_BUILD=''
+    IU_DISABLE_TARGET([ping6])
   fi
 fi
 
@@ -569,9 +589,10 @@ if test "$with_wrap" = yes; then
   AC_MSG_CHECKING(hosts_ctl in -lwrap);
   save_LIBS=$LIBS
   LIBS="$save_LIBS -lwrap"
-  AC_TRY_LINK([int allow_severity = 1; int deny_severity = 1;],
-              hosts_ctl(), eval "ac_cv_lib_wrap_hosts_ctl=yes",
-              eval "ac_cv_lib_wrap_hosts_ctl=no")
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[int allow_severity = 1; int deny_severity = 1;]],
+                                  [[hosts_ctl()]])],
+                 [eval "ac_cv_lib_wrap_hosts_ctl=yes"],
+		 [eval "ac_cv_lib_wrap_hosts_ctl=no"])
   LIBS=$save_LIBS
   if test "$ac_cv_lib_wrap_hosts_ctl" = yes \
       && test "$ac_cv_header_tcpd_h" = yes; then
@@ -589,20 +610,15 @@ AC_CHECK_FUNCS([setlocale])
 IU_CHECK_LIBIDN([$with_libidn_prefix], [$with_idn])
 
 ### Checks for header files.
-
-AC_HEADER_STDC
-AC_HEADER_TIME
-AC_HEADER_DIRENT
-
-AC_CHECK_HEADERS([arpa/nameser.h errno.h fcntl.h features.h \
+AC_CHECK_HEADERS([arpa/nameser.h arpa/tftp.h fcntl.h features.h \
 		  glob.h memory.h netinet/ether.h netinet/in_systm.h \
 		  netinet/ip.h netinet/ip_icmp.h netinet/ip_var.h \
 		  security/pam_appl.h shadow.h \
-		  stdarg.h stdlib.h string.h stropts.h sys/tty.h \
+		  stropts.h sys/tty.h \
 		  sys/utsname.h sys/ptyvar.h sys/msgbuf.h sys/filio.h \
 		  sys/ioctl_compat.h sys/cdefs.h sys/stream.h sys/mkdev.h \
 		  sys/sockio.h sys/sysmacros.h sys/param.h sys/file.h \
-		  sys/proc.h sys/select.h sys/time.h sys/wait.h \
+		  sys/proc.h sys/select.h sys/wait.h \
                   sys/resource.h \
 		  stropts.h tcpd.h utmp.h utmpx.h unistd.h \
                   vis.h], [], [], [
@@ -618,19 +634,17 @@ AC_CHECK_HEADERS([arpa/nameser.h errno.h fcntl.h features.h \
 # include <sys/param.h>
 #endif
 ]
-
 )
 
+# Recent Cygwin 2.9 has dropped <arpa/tftp.h>.  Other systems
+# might take similar steps.
+if test "$ac_cv_header_arpa_tftp_h" = no; then
+  AC_MSG_WARN([arpa/tftp.h is not available: not building tftp, nor tftpd])
+  IU_DISABLE_TARGET(tftp)
+  IU_DISABLE_TARGET(tftpd)
+fi
+
 ### Checks for types.
-
-# Checks return type of signal handlers
-AC_TYPE_SIGNAL
-
-AC_CHECK_TYPE(socklen_t, ,
-  [AC_DEFINE([socklen_t], int,
-    [Define to int if <sys/types.h> does not define])],
-  [IU_FLUSHLEFT([#include <sys/types.h>
-                 #include <sys/socket.h>])])
 
 AC_CHECK_TYPES(struct if_nameindex, , ,
   [IU_FLUSHLEFT([#include <sys/types.h>
@@ -727,24 +741,11 @@ IU_CHECK_MEMBERS([struct tftphdr.th_u], , ,
 		  #include <sys/socket.h>
 		  #include <arpa/tftp.h>])
 
-### Checks for compiler characteristics.
-AC_C_CONST
-
-# See if `weak refs' are possible; these make it possible (with shared
-# libraries) to check for the existance of a standard function at
-# run-time instead of compile time, which is very handy for
-# distributing binary version programs that automatically adapt -- in
-# inetutils case, to whether or not crypt is available.
-IU_CHECK_WEAK_REFS
-
 ### Checks for library functions.
-AC_FUNC_CLOSEDIR_VOID
-AC_FUNC_SETVBUF_REVERSED
 AC_FUNC_FORK
-AC_FUNC_STRCOLL
 AC_FUNC_MMAP
 
-AC_CHECK_FUNCS(cfsetspeed cgetent dirfd fchdir flock \
+AC_CHECK_FUNCS(cfsetspeed cgetent dirfd flock \
                fork fpathconf ftruncate \
                getcwd getmsg getpwuid_r getspnam getutxent getutxuser \
                initgroups initsetproctitle killpg \
@@ -763,10 +764,6 @@ LIBS="$LIBS $LIBUTIL"
 AC_CHECK_FUNCS(login loginx logout logoutx logwtmp logwtmpx)
 LIBS="$_SAVE_LIBS"
 
-# Functions that we will define if necessary.
-AC_REPLACE_FUNCS(getpass getusershell memcmp memcpy memmove memset \
-		 strdup poll)
-
 # Look for the crypt function itself (in libcrypt if possible)
 _SAVE_LIBS="$LIBS"
 LIBS="$LIBCRYPT $LIBS"
@@ -778,34 +775,6 @@ AC_CHECK_FUNC(_obstack_free)
 # Use (posix) `setpgid' if it's around, otherwise assume a BSD setpgrp
 AC_CHECK_FUNC(setpgid, , AC_DEFINE([setpgid], setpgrp,
                           [Define to `setpgrp' if you don't have `setpgid'.]))
-
-# We use our own version of getopt (including our own header file) if
-# the system one doesn't have getopt_long.
-AC_CHECK_FUNC(getopt_long)
-
-AC_CHECK_HEADER(poll.h)
-
-# See if snprintf exists, otherwise just use a bogus version
-AC_CHECK_FUNC(snprintf,
-  [AC_DEFINE([HAVE_SNPRINTF], 1, [Define to one if you have snprintf])])
-
-# See if vsnprintf exists, otherwise use our own.
-AC_CHECK_FUNC(vsnprintf,
-  [AC_DEFINE([HAVE_VSNPRINTF], 1, [Define to one if you have vsnprintf])])
-
-# See if the system has strerror, and replace it if not
-AC_CHECK_FUNC(strerror)
-if test "$ac_cv_func_strerror" = no; then
-  # No strerror, so see if the SYS_ERRLIST variable can be used by
-  # ours
-  AC_CHECK_FUNC(sys_errlist, AC_DEFINE([HAVE_SYS_ERRLIST], 1,
-                              [Define to one if you have sys_errlist.]))
-  if test "$ac_cv_func_sys_errlist" = yes; then
-    AC_CHECK_DECL(sys_errlist, , ,
-      [IU_FLUSHLEFT([#include <stdio.h>
-                    #include <errno.h>])])
-  fi
-fi
 
 # See if the system has hstrerror, and replace it if not
 save_LIBS=$LIBS
@@ -872,16 +841,7 @@ AC_MSG_RESULT([$ac_iu_const_enctype_names])
 
 ## Checks for function declarations.
 
-AC_DECL_SYS_SIGLIST
-
 AC_CHECK_DECLS(crypt, , , [#include <unistd.h>])
-
-# EWOULDBLOCK is more or less the BSD version of posix EAGAIN.
-IU_CHECK_MACRO(EWOULDBLOCK, [#include <errno.h>], , ,
-  [AC_DEFINE([EWOULDBLOCK], EAGAIN, 1,
-     [Define to EAGAIN if system does not provide EWOULDBLOCK])])
-
-AC_CHECK_DECLS(errno, , , [#include <errno.h>])
 
 # See whether <syslog.h> will declare special internal stuff if we
 # define SYSLOG_NAMES before including it.  We check for various
@@ -916,17 +876,10 @@ AC_CHECK_DECLS(htons, , ,
                  #endif
                  #include <netinet/in.h> ])])
 
-# Our home-grown version of setenv needs to use ENVIRON
-AC_CHECK_DECLS(environ, , ,
-  [IU_FLUSHLEFT([#include <unistd.h>
-                 #include <stdlib.h>])])
-
 # See if we have h_errno (the test is here so we can use -lresolv if
 # necessary).
 AC_CACHE_CHECK([for h_errno], inetutils_cv_var_h_errno,
-  AC_TRY_COMPILE([#include <netdb.h>],
-    [ extern int h_errno; int iu_x = h_errno; ],
-    inetutils_cv_var_h_errno=yes, inetutils_cv_var_h_errno=no))
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <netdb.h>]], [[ extern int h_errno; int iu_x = h_errno; ]])],[inetutils_cv_var_h_errno=yes],[inetutils_cv_var_h_errno=no]))
 if test "$inetutils_cv_var_h_errno" = yes; then
   # FIXME: Isn't this wrong? Shouldn't the declaration check define
   #        this if we find h_errno?
@@ -989,16 +942,6 @@ AH_BOTTOM(
 # entry in utmpx.  Also for some OS they are better handled with
 # STREAMS.
 case "$host" in
-*-freebsd9* | *-freebsd10* )
-  # FreeBSD 9.0 has implemented a non-standard and singular
-  # UTMPX interface.  The readutmp module from GNUlib does
-  # not support it, but we can fall back to getutxuser() for
-  # use in syslogd and talkd.  For ftpd, rlogind, telnetd,
-  # and uucpd the use of pututxent() should suffice, but
-  # this needs continued observations.
-  #
-  # Other issues?
-  ;;
 *olaris* )
   case "$host" in
   *olaris*10 | *olaris*11 )
@@ -1011,9 +954,6 @@ case "$host" in
   AC_DEFINE([SOLARIS], 1, [Define to 1 for any Solaris system])
   AC_DEFINE([HAVE_STREAMSPTY], 1,
     [Define to 1 for a system using streams for ptys])
-  ;;
-*irix* | *hpux* )
-  # Known and needed work-arounds?
   ;;
 esac
 
@@ -1081,12 +1021,14 @@ rlogind_PROPS="${rlogind_PROPS:+$rlogind_PROPS }$LIBWRAP"
 
 # Support for libidn.
 
-ftp_PROPS="${ftp_PROPS:+$ftp_PROPS }${LIBIDN:+-lidn}"
-ping_PROPS="${ping_PROPS:+$ping_PROPS }${LIBIDN:+-lidn}"
-talk_PROPS="${talk_PROPS:+$talk_PROPS }${LIBIDN:+-lidn}"
-telnet_PROPS="${telnet_PROPS:+$telnet_PROPS }${LIBIDN:+-lidn}"
-tftp_PROPS="${tftp_PROPS:+$tftp_PROPS }${LIBIDN:+-lidn}"
-traceroute_PROPS="${traceroute_PROPS:+$traceroute_PROPS }${LIBIDN:+-lidn}"
+idn_link=`expr X"$LIBIDN" : '.*-l\(idn2*\)'`
+
+ftp_PROPS="${ftp_PROPS:+$ftp_PROPS }${LIBIDN:+$idn_link}"
+ping_PROPS="${ping_PROPS:+$ping_PROPS }${LIBIDN:+$idn_link}"
+talk_PROPS="${talk_PROPS:+$talk_PROPS }${LIBIDN:+$idn_link}"
+telnet_PROPS="${telnet_PROPS:+$telnet_PROPS }${LIBIDN:+$idn_link}"
+tftp_PROPS="${tftp_PROPS:+$tftp_PROPS }${LIBIDN:+$idn_link}"
+traceroute_PROPS="${traceroute_PROPS:+$traceroute_PROPS }${LIBIDN:+$idn_link}"
 
 # Termcap variants.
 

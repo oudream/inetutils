@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -126,7 +124,7 @@ SetSockOpt (int fd, int level, int option, int yesno)
 unsigned char NetTraceFile[256] = "(standard output)";
 
 void
-SetNetTrace (register char *file)
+SetNetTrace (const char *file)
 {
   if (NetTrace && NetTrace != stdout)
     fclose (NetTrace);
@@ -732,7 +730,7 @@ printsub (char direction, unsigned char *pointer, int length)
 	      {
 		char tbuf[64];
 
-		sprintf (tbuf, "%s%s%s%s%s",
+		snprintf (tbuf, sizeof (tbuf), "%s%s%s%s%s",
 			 pointer[2] & MODE_EDIT ? "|EDIT" : "",
 			 pointer[2] & MODE_TRAPSIG ? "|TRAPSIG" : "",
 			 pointer[2] & MODE_SOFT_TAB ? "|SOFT_TAB" : "",
@@ -1062,7 +1060,6 @@ Exit (int returnCode)
 void
 ExitString (char *string, int returnCode)
 {
-  SetForExit ();
   fwrite (string, 1, strlen (string), stderr);
   exit (returnCode);
 }

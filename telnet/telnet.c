@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -77,7 +75,9 @@
 # include <termcap.h>
 #elif defined HAVE_CURSES_TGETENT
 # include <curses.h>
-# include <term.h>
+# ifndef _XOPEN_CURSES
+#  include <term.h>
+# endif
 #endif
 
 #ifdef AUTHENTICATION
@@ -859,10 +859,13 @@ suboption (void)
 #endif /* defined(TN3270) */
 	  name = gettermname ();
 	  len = strlen (name) + 4 + 2;
-	  if (len < NETROOM ())
+
+	  if ((len < NETROOM ()) && (len < (int) sizeof (temp)))
 	    {
-	      sprintf ((char *) temp, "%c%c%c%c%s%c%c", IAC, SB, TELOPT_TTYPE,
-		       TELQUAL_IS, name, IAC, SE);
+	      snprintf ((char *) temp, sizeof (temp), "%c%c%c%c%s%c%c",
+			IAC, SB, TELOPT_TTYPE, TELQUAL_IS,
+			name,
+			IAC, SE);
 	      ring_supply_data (&netoring, temp, len);
 	      printsub ('>', &temp[2], len - 2);
 	    }
@@ -880,13 +883,15 @@ suboption (void)
       if (SB_GET () == TELQUAL_SEND)
 	{
 	  long ospeed, ispeed;
-	  unsigned char temp[50];
+	  unsigned char temp[50];	/* Two six-digit integers plus 7.  */
 	  int len;
 
 	  TerminalSpeeds (&ispeed, &ospeed);
 
-	  sprintf ((char *) temp, "%c%c%c%c%d,%d%c%c", IAC, SB, TELOPT_TSPEED,
-		   TELQUAL_IS, (int) ospeed, (int) ispeed, IAC, SE);
+	  snprintf ((char *) temp, sizeof (temp), "%c%c%c%c%d,%d%c%c",
+		    IAC, SB, TELOPT_TSPEED, TELQUAL_IS,
+		    (int) ospeed, (int) ispeed,
+		    IAC, SE);
 	  len = strlen ((char *) temp + 4) + 4;	/* temp[3] is 0 ... */
 
 	  if (len < NETROOM ())
@@ -999,8 +1004,25 @@ suboption (void)
 	      send_wont (TELOPT_XDISPLOC, 1);
 	      break;
 	    }
-	  sprintf ((char *) temp, "%c%c%c%c%s%c%c", IAC, SB, TELOPT_XDISPLOC,
-		   TELQUAL_IS, dp, IAC, SE);
+
+	  /* Remote host, and display server must not be corrupted
+	   * by truncation.  In addition, every character of telnet
+	   * protocol must remain unsevered.  Check that DP fits in
+	   * full within TEMP.  Otherwise report buffer error and
+	   * turn off the option.
+	   */
+	  if (strlen ((char *) dp) >= sizeof (temp) - 4 - 2)
+	    {
+	      printf ("lm_will: not enough room in buffer for DISPLAY\n");
+	      send_wont (TELOPT_XDISPLOC, 1);
+	      break;
+	    }
+
+	  /* Go ahead safely.  */
+	  snprintf ((char *) temp, sizeof (temp), "%c%c%c%c%s%c%c",
+		    IAC, SB, TELOPT_XDISPLOC, TELQUAL_IS,
+		    dp,
+		    IAC, SE);
 	  len = strlen ((char *) temp + 4) + 4;	/* temp[3] is 0 ... */
 
 	  if (len < NETROOM ())
@@ -1326,7 +1348,7 @@ slcstate (void)
 }
 
 void
-slc_mode_export (void)
+slc_mode_export (int n)
 {
   slc_mode = SLC_EXPORT;
   if (my_state_is_will (TELOPT_LINEMODE))
@@ -1510,7 +1532,7 @@ slc_start_reply (void)
 }
 
 void
-slc_add_reply (unsigned char func, unsigned char flags, cc_t value)
+slc_add_reply(unsigned int func, unsigned int flags, cc_t value)
 {
   if ((*slc_replyp++ = func) == IAC)
     *slc_replyp++ = IAC;
@@ -1655,8 +1677,8 @@ env_opt (register unsigned char *buf, register int len)
     }
 }
 
-#define OPT_REPLY_SIZE	256
-unsigned char *opt_reply;
+#define OPT_REPLY_SIZE	(2 * SUBBUFSIZE)
+unsigned char *opt_reply = NULL;
 unsigned char *opt_replyp;
 unsigned char *opt_replyend;
 
@@ -1739,6 +1761,8 @@ env_opt_add (register unsigned char *ep)
     {
       while ((c = *ep++))
 	{
+	  if (opt_replyp + (2 + 2) > opt_replyend)
+	    return;
 	  switch (c & 0xff)
 	    {
 	    case IAC:
@@ -1755,6 +1779,8 @@ env_opt_add (register unsigned char *ep)
 	}
       if ((ep = vp))
 	{
+	  if (opt_replyp + (1 + 2 + 2) > opt_replyend)
+	    return;
 #ifdef	OLD_ENVIRON
 	  if (telopt_environ == TELOPT_OLD_ENVIRON)
 	    *opt_replyp++ = old_env_value;
@@ -1785,6 +1811,8 @@ env_opt_end (register int emptyok)
 {
   register int len;
 
+  if (opt_replyp + 2 > opt_replyend)
+    return;
   len = opt_replyp - opt_reply + 2;
   if (emptyok || len > 6)
     {
@@ -2090,12 +2118,12 @@ telrcv (void)
 		  /*
 		   * This is an error.  We only expect to get
 		   * "IAC IAC" or "IAC SE".  Several things may
-		   * have happend.  An IAC was not doubled, the
+		   * have happened.  An IAC was not doubled, the
 		   * IAC SE was left off, or another option got
 		   * inserted into the suboption are all possibilities.
 		   * If we assume that the IAC was not doubled,
 		   * and really the IAC SE was left off, we could
-		   * get into an infinate loop here.  So, instead,
+		   * get into an infinite loop here.  So, instead,
 		   * we terminate the suboption, and process the
 		   * partial suboption if we can.
 		   */
@@ -2223,7 +2251,7 @@ telsnd (void)
 	  if ((sc == '\n') || (sc == '\r'))
 	    bol = 1;
 	}
-      else if (sc == escape)
+      else if (escape != _POSIX_VDISABLE && sc == escape)
 	{
 	  /*
 	   * Double escape is a pass through of a single escape character.
@@ -2696,7 +2724,7 @@ xmitEC (void)
 
 
 int
-dosynch (void)
+dosynch(const char *s)
 {
   netclear ();			/* clear the path to the network */
   NETADD (IAC);
@@ -2709,7 +2737,7 @@ dosynch (void)
 int want_status_response = 0;
 
 int
-get_status (void)
+get_status(const char *s)
 {
   unsigned char tmp[16];
   register unsigned char *cp;
@@ -2748,7 +2776,7 @@ intp (void)
     }
   if (autosynch)
     {
-      dosynch ();
+      dosynch(NULL);
     }
 }
 
@@ -2764,7 +2792,7 @@ sendbrk (void)
     }
   if (autosynch)
     {
-      dosynch ();
+      dosynch (NULL);
     }
 }
 
@@ -2780,7 +2808,7 @@ sendabort (void)
     }
   if (autosynch)
     {
-      dosynch ();
+      dosynch (NULL);
     }
 }
 
@@ -2796,7 +2824,7 @@ sendsusp (void)
     }
   if (autosynch)
     {
-      dosynch ();
+      dosynch (NULL);
     }
 }
 

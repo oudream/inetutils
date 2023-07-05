@@ -1,6 +1,5 @@
 /* readutmp - Basic test of existing utmp/utmpx access.
-  Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015 Free Software
-  Foundation, Inc.
+  Copyright (C) 2010-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -36,9 +35,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>
-#endif
+#include <sys/types.h>
 #include <pwd.h>
 
 #include <progname.h>

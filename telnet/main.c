@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -63,7 +61,7 @@
 #include <progname.h>
 #include <error.h>
 #include <argp.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include <libinetutils.h>
 
 #include <arpa/telnet.h>
@@ -104,7 +102,7 @@ tninit (void)
 }
 
 int family = 0;
-char *user;
+char *user, *srcaddr;
 #ifdef	FORWARD
 extern int forward_flags;
 #endif /* FORWARD */
@@ -131,6 +129,8 @@ static struct argp_option argp_options[] = {
   /* FIXME: Called "8bit" in r* utils */
   { "binary", '8', NULL, 0,
     "use an 8-bit data transmission", GRID+1 },
+  { "bind", 'b', "ADDRESS", 0,
+    "bind to specific local ADDRESS", GRID+1 },
   { "login", 'a', NULL, 0,
     "attempt automatic login", GRID+1 },
   { "no-rc", 'c', NULL, 0,
@@ -198,7 +198,7 @@ static struct argp_option argp_options[] = {
 };
 
 static error_t
-parse_opt (int key, char *arg, struct argp_state *state _GL_UNUSED_PARAMETER)
+parse_opt (int key, char *arg, struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -312,6 +312,10 @@ parse_opt (int key, char *arg, struct argp_state *state _GL_UNUSED_PARAMETER)
       break;
 #endif
 
+    case 'b':
+      srcaddr = arg;
+      break;
+
     default:
       return ARGP_ERR_UNKNOWN;
     }
@@ -373,7 +377,7 @@ main (int argc, char *argv[])
     {
       /* The command line contains at least one argument.
        */
-      char *args[8], **argp = args;
+      char *args[10], **argp = args;
 
       if (argc > 2)
 	error (EXIT_FAILURE, 0, "too many arguments");
@@ -382,6 +386,11 @@ main (int argc, char *argv[])
 	{
 	  *argp++ = "-l";
 	  *argp++ = user;
+	}
+      if (srcaddr)
+	{
+	  *argp++ = "-b";
+	  *argp++ = srcaddr;
 	}
       if (family == 4)
 	*argp++ = "-4";

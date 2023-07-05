@@ -1,6 +1,5 @@
 #
-# Copyright (C) 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
-# Free Software Foundation, Inc.
+# Copyright (C) 2007-2022 Free Software Foundation, Inc.
 #
 # This file is part of GNU Inetutils.
 #
@@ -21,10 +20,14 @@ AM_CPPFLAGS = $(iu_INCLUDES)
 
 LDADD = $(iu_LIBRARIES)
 
-noinst_PROGRAMS = identify
-identify_LDADD =
+EXTRA_DIST = tools.sh.in ifconfig_modes.sh crash-tftp-msg2021-12_18.bin \
+	crash-ftp-msg2021-12_03.bin crash-ftp-msg2021-12_16.bin \
+	crash-ftp-msg2021-12_04.bin crash-ftp-msg2021-12_05.bin
 
-check_PROGRAMS = localhost readutmp waitdaemon
+noinst_PROGRAMS = identify
+identify_LDADD = $(top_builddir)/lib/libgnu.a $(LIBUTIL) $(PTY_LIB)
+
+check_PROGRAMS = localhost readutmp runtime-ipv6 test-snprintf waitdaemon
 
 dist_check_SCRIPTS = utmp.sh
 
@@ -44,6 +47,9 @@ endif
 if ENABLE_traceroute
 dist_check_SCRIPTS += traceroute-localhost.sh
 endif
+if ENABLE_tftpd
+dist_check_SCRIPTS += tftp-regressions.sh
+endif
 if ENABLE_inetd
 if ENABLE_tftpd
 if ENABLE_tftp
@@ -58,7 +64,7 @@ endif
 endif
 
 if ENABLE_ftp
-dist_check_SCRIPTS += ftp-parser.sh
+dist_check_SCRIPTS += ftp-parser.sh ftp-regressions.sh
 endif
 
 if ENABLE_inetd
@@ -87,23 +93,24 @@ if ENABLE_ifconfig
 dist_check_SCRIPTS += ifconfig.sh
 endif
 
-TESTS = localhost waitdaemon $(dist_check_SCRIPTS)
+TESTS = localhost test-snprintf waitdaemon $(dist_check_SCRIPTS)
 
 TESTS_ENVIRONMENT = EXEEXT=$(EXEEXT)
-
-EXTRA_DIST = tools.sh.in ifconfig_modes.sh
 
 BUILT_SOURCES = tools.sh
 
 CLEANFILES = tools.sh
 
 tools_subst = sed -e 's,[@]GREP[@],$(GREP),g' \
+	      -e 's,[@]EGREP[@],$(EGREP),g' \
+	      -e 's,[@]FGREP[@],$(FGREP),g' \
 	      -e 's,[@]SED[@],$(SED),g' \
 	      -e 's,[@]DD[@],$(DD),g' \
 	      -e 's,[@]MKTEMP[@],$(MKTEMP),g' \
-	      -e 's,[@]NETSTAT[@],$(NETSTAT),g'\
-	      -e 's,[@]TARGET[@],$(TARGET),g'\
-	      -e 's,[@]TARGET6[@],$(TARGET6),g'\
+	      -e 's,[@]NETSTAT[@],$(NETSTAT),g' \
+	      -e 's,[@]TARGET[@],$(TARGET),g' \
+	      -e 's,[@]TARGET6[@],$(TARGET6),g' \
+	      -e 's,[@]TEST_IPV4[@],$(TEST_IPV4),g' \
 	      -e 's,[@]TEST_IPV6[@],$(TEST_IPV6),g'
 
 tools.sh: tools.sh.in Makefile

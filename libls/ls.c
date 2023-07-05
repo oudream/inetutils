@@ -1,6 +1,5 @@
 /*
-  Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
-  2009, 2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -56,7 +55,7 @@
 #include <sys/ioctl.h>
 
 #include <errno.h>
-#include "fts.h"
+#include <fts_.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,7 +64,6 @@
 #include <grp.h>
 #include <termios.h>
 
-#include <intprops.h>
 #include <inttostr.h>
 #include "ls.h"
 #include "extern.h"
@@ -120,7 +118,6 @@ ls_main (int argc, char **argv)
   static char dot[] = ".", *dotav[] = { dot, NULL };
   struct winsize win;
   int ch, fts_options;
-  int kflag = 0;
   char *p;
 
   /*
@@ -154,7 +151,7 @@ ls_main (int argc, char **argv)
 
   optind = 1;	/* Reset for reentrant scanning.  */
 
-  fts_options = FTS_PHYSICAL;
+  fts_options = FTS_PHYSICAL | FTS_NOCHDIR;
   while ((ch = getopt (argc, argv, "1ACFLRSTWacdfgiklmnopqrstux")) != -1)
     {
       switch (ch)
@@ -228,7 +225,6 @@ ls_main (int argc, char **argv)
 	  break;
 	case 'k':
 	  blocksize = 1024;
-	  kflag = 1;
 	  break;
 	case 'o':
 	  f_flags = 1;

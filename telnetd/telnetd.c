@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-  2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-  2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -26,7 +24,7 @@
 #include <argp.h>
 #include <progname.h>
 #include <error.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 #include <libinetutils.h>
 
 #if defined AUTHENTICATION || defined ENCRYPTION
@@ -144,7 +142,7 @@ static struct argp_option argp_options[] = {
 };
 
 static error_t
-parse_opt (int key, char *arg, struct argp_state *state _GL_UNUSED_PARAMETER)
+parse_opt (int key, char *arg, struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -332,7 +330,7 @@ telnetd_setup (int fd)
   struct sockaddr_in saddr;
   struct hostent *hp;
 #endif
-  int true = 1;
+  int on = 1;
   socklen_t len;
   char uname[256];
    /*FIXME*/ int level;
@@ -486,12 +484,12 @@ telnetd_setup (int fd)
 
   if (keepalive
       && setsockopt (fd, SOL_SOCKET, SO_KEEPALIVE,
-		     (char *) &true, sizeof (true)) < 0)
+		     (char *) &on, sizeof (on)) < 0)
     syslog (LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
 
   if (debug_tcp
       && setsockopt (fd, SOL_SOCKET, SO_DEBUG,
-		     (char *) &true, sizeof (true)) < 0)
+		     (char *) &on, sizeof (on)) < 0)
     syslog (LOG_WARNING, "setsockopt (SO_DEBUG): %m");
 
   net = fd;
@@ -504,6 +502,14 @@ telnetd_setup (int fd)
 
   io_setup ();
 
+  /* Before doing anything related to the identity of the client,
+   * scrub the environment variable USER, since it may be set with
+   * an irrelevant user name at this point.  OpenBSD has been known
+   * to offend at this point with their own inetd.  Any demand for
+   * autologin will get attention in getterminaltype().
+   */
+  unsetenv ("USER");
+
   /* get terminal type. */
   uname[0] = 0;
   level = getterminaltype (uname, sizeof (uname));
@@ -514,13 +520,13 @@ telnetd_setup (int fd)
 
 #ifndef HAVE_STREAMSPTY
   /* Turn on packet mode */
-  ioctl (pty, TIOCPKT, (char *) &true);
+  ioctl (pty, TIOCPKT, (char *) &on);
 #endif
-  ioctl (pty, FIONBIO, (char *) &true);
-  ioctl (net, FIONBIO, (char *) &true);
+  ioctl (pty, FIONBIO, (char *) &on);
+  ioctl (net, FIONBIO, (char *) &on);
 
 #if defined SO_OOBINLINE
-  setsockopt (net, SOL_SOCKET, SO_OOBINLINE, (char *) &true, sizeof true);
+  setsockopt (net, SOL_SOCKET, SO_OOBINLINE, (char *) &on, sizeof on);
 #endif
 
 #ifdef SIGTSTP
@@ -662,7 +668,13 @@ telnetd_run (void)
       if (FD_ISSET (pty, &ibits))
 	{
 	  /* Something to read from the pty... */
-	  if (pty_read () <= 0)
+
+	  /* Observe that pty_read() is masking a few select
+	   * read errors with the return value 0.  Let them
+	   * pass for further manipulation.  Issue reported in
+	   * http://lists.gnu.org/archive/html/bug-inetutils/2015-07/msg00006.html
+	   */
+	  if (pty_read () < 0)
 	    break;
 
 	  /* The first byte is now TIOCPKT data.  Peek at it.  */
@@ -692,9 +704,15 @@ telnetd_run (void)
 	      int newflow = (c & TIOCPKT_DOSTOP) ? 1 : 0;
 	      if (newflow != flowmode)
 		{
-		  net_output_data ("%c%c%c%c%c%c",
-				   IAC, SB, TELOPT_LFLOW,
-				   flowmode ? LFLOW_ON : LFLOW_OFF, IAC, SE);
+		  char data[7];
+
+		  sprintf (data, "%c%c%c%c%c%c",
+			   IAC, SB, TELOPT_LFLOW,
+			   flowmode ? LFLOW_ON : LFLOW_OFF,
+			   IAC, SE);
+		  net_output_datalen (data, sizeof (data));
+		  DEBUG (debug_options, 1,
+			 printsub ('>', data + 2, sizeof (data) - 2));
 		}
 	    }
 
@@ -775,7 +793,7 @@ print_hostinfo (void)
 }
 
 static void
-chld_is_done (int sig _GL_UNUSED_PARAMETER)
+chld_is_done (int sig MAYBE_UNUSED)
 {
   pending_sigchld = 1;
 }

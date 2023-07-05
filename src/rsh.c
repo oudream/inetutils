@@ -1,7 +1,5 @@
 /*
-  Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-  2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
-  2015 Free Software Foundation, Inc.
+  Copyright (C) 1995-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -77,7 +75,7 @@
 #include <xalloc.h>
 #include <argp.h>
 #include <libinetutils.h>
-#include <unused-parameter.h>
+#include <attribute.h>
 
 #ifdef KRB5
 # ifdef HAVE_KRB5_H
@@ -172,7 +170,7 @@ static struct argp_option options[] = {
 
 static error_t
 parse_opt (int key, char *arg,
-	   struct argp_state *state _GL_UNUSED_PARAMETER)
+	   struct argp_state *state MAYBE_UNUSED)
 {
   switch (key)
     {
@@ -783,7 +781,7 @@ sendsig (int sig)
 }
 
 void
-sigpipe (int sig _GL_UNUSED_PARAMETER)
+sigpipe (int sig MAYBE_UNUSED)
 {
   ++end_of_pipe;
 }

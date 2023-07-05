@@ -1,7 +1,5 @@
 #
-# Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-# 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015 Free Software
-# Foundation, Inc.
+# Copyright (C) 1997-2022 Free Software Foundation, Inc.
 #
 # This file is part of GNU Inetutils.
 #
@@ -20,7 +18,7 @@
 
 ACLOCAL_AMFLAGS = -I am -I m4
 
-EXTRA_DIST = paths ChangeLog.0 summary.sh.in CHECKLIST
+EXTRA_DIST = paths ChangeLog.0 ChangeLog.1 summary.sh.in CHECKLIST
 
 SUBDIRS = lib \
 	libinetutils libtelnet libicmp libls \
@@ -28,15 +26,21 @@ SUBDIRS = lib \
 	doc man \
 	tests
 
-DISTCLEANFILES = pathdefs.make paths.defs \
-	$(top_builddir)/.version \
-	$(PACKAGE)-$(VERSION).tar.gz $(PACKAGE)-$(VERSION).tar.xz
+DISTCLEANFILES = pathdefs.make paths.defs
 
-BUILT_SOURCES = $(top_builddir)/.version
-$(top_builddir)/.version:
+# git-version-gen
+EXTRA_DIST += $(top_srcdir)/.version
+BUILT_SOURCES = $(top_srcdir)/.version
+$(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
-dist-hook:
+dist-hook: gen-ChangeLog
 	echo $(VERSION) > $(distdir)/.tarball-version
 
-snapshot:
-	$(MAKE) dist distdir=$(PACKAGE)-`date +"%Y%m%d"`
+.PHONY: gen-ChangeLog
+gen-ChangeLog:
+	$(AM_V_GEN)if test -d .git; then				\
+		$(top_srcdir)/build-aux/gitlog-to-changelog		\
+			-- v2.0~.. > $(distdir)/cl-t &&			\
+		{ rm -f $(distdir)/ChangeLog &&				\
+		  mv $(distdir)/cl-t $(distdir)/ChangeLog; }		\
+	fi

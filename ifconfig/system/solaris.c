@@ -1,6 +1,5 @@
 /* solaris.c -- Solaris specific code for ifconfig
-  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-  2010, 2011, 2012, 2013, 2014, 2015 Free Software Foundation, Inc.
+  Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
   This file is part of GNU Inetutils.
 
@@ -45,7 +44,7 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 
-#include <unused-parameter.h>
+#include <attribute.h>
 
 #include "../ifconfig.h"
 
@@ -64,9 +63,9 @@ NAME [ADDR [DSTADDR]] [broadcast BRDADDR] [netmask MASK] "
 struct argp_child system_argp_child;
 
 int
-system_parse_opt (struct ifconfig **ifp _GL_UNUSED_PARAMETER,
-		  char option _GL_UNUSED_PARAMETER,
-		  char *optarg _GL_UNUSED_PARAMETER)
+system_parse_opt (struct ifconfig **ifp MAYBE_UNUSED,
+		  char option MAYBE_UNUSED,
+		  char *optarg MAYBE_UNUSED)
 {
   return 0;
 }
@@ -171,6 +170,13 @@ system_parse_opt_rest (struct ifconfig **ifp, int argc, char *argv[])
     case EXPECT_NOTHING:
       return 1;
     }
+  return 0;
+}
+
+int
+system_preconfigure (int sfd MAYBE_UNUSED,
+		     struct ifreq *ifr MAYBE_UNUSED)
+{
   return 0;
 }
 
